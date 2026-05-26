@@ -1,5 +1,5 @@
 ---
-name: meeting-note
+name: pm-meeting-notes
 description: >
   Use this skill whenever the user wants to extract meeting notes, minutes, or a summary from a meeting transcript — especially from Microsoft Teams, Zoom, Google Meet, or any raw transcript text. Trigger when the user shares a transcript file or text and asks for a summary, key points, action items, decisions, or meeting minutes. Also trigger when the user says things like "summarize this meeting", "what was discussed", "extract the important parts", "write up the minutes", or pastes a block of conversation text that looks like a meeting transcript. This skill produces clean, plain-English meeting minutes and follow-up questions the user can ask to go deeper. Also trigger when the user wants to save or publish meeting minutes to Confluence.
 tools:

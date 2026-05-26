@@ -1,5 +1,5 @@
 ---
-name: technical-feasibility-review
+name: pm-tech-review
 description: Helps a PM interpret a technical brief, architecture document, or solution architect output. Translates technical complexity into delivery-relevant language, surfaces risks hidden in technical decisions, identifies the right questions to raise with the SA or tech lead, and produces a PM-ready feasibility summary. Use when you receive an SA proposal, system design doc, integration spec, or tech stack decision and need to understand what it means for scope, timeline, and risk before committing to a plan.
 tools: []
 ---

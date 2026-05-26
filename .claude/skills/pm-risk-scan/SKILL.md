@@ -1,5 +1,5 @@
 ---
-name: risk-scan
+name: pm-risk-scan
 description: Identifies, evaluates, and recommends mitigation strategies for project risks across any phase of delivery. Use whenever a PM needs continuous risk discovery or decision support — including when someone says "analyse the risks on this project", "do a full risk analysis", "we need a risk review", "what risks should I be tracking right now", "update the risk picture", or shares project context and wants a structured risk assessment. Unlike the initial pre-screen (pm-initial-risk-scan), this skill is designed for ongoing use across all project phases — Discovery through Deployment — and adjusts depth based on how much time the PM has. Use it at any phase gate, after significant scope changes, or when the risk landscape feels unclear.
 tools: []
 ---

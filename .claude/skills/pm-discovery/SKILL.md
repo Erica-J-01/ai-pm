@@ -1,5 +1,5 @@
 ---
-name: discovery-workshop
+name: pm-discovery
 description: Plans and documents discovery workshops and stakeholder interviews for new projects. Use whenever a PM needs to prepare for or capture output from a discovery session — including when someone says "plan a discovery workshop", "run discovery on this", "I need to interview stakeholders", "help me structure discovery", "summarise what came out of the discovery session", or shares raw notes from a workshop or interview and needs them turned into structured findings. Discovery is where projects are made or broken — the goal is to understand the real problem before anyone commits to a solution. Use this skill before requirements are written and before any build begins.
 tools: []
 ---

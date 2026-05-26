@@ -1,5 +1,5 @@
 ---
-name: sprint-sow
+name: pm-sprint-sow
 tools: []
 description: Generates a Sprint Scope of Work (SOW) document in the exact format used by the team — with Sprint Goal, Overview, Timeline, Team table, Deliverables by Theme (each with a ticket table), Out of Scope list, and Definition of Done checklist. Use this skill whenever the user asks to create, draft, or update a sprint SOW, scope of work document, or sprint planning document. Trigger even if they say "write up the sprint", "create the SOW", or "document this sprint".
 ---

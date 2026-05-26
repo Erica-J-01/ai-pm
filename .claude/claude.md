@@ -18,18 +18,18 @@ Skills are invoked by name or triggered automatically when the input matches the
 
 | Skill | Path | Trigger |
 |---|---|---|
-| `triage` | `.claude/skills/pm-execution/triage/` | Raw client message, forwarded email, vague request needing triage |
-| `risk-scan` | `.claude/skills/pm-execution/risk-scan/` | Any risk review request; "analyse risks", "risk scan", phase gate |
-| `charter` | `.claude/skills/pm-execution/charter/` | "Write the charter", new project formalisation |
-| `discovery` | `.claude/skills/pm-execution/discovery/` | Discovery planning, workshop facilitation |
-| `prd` | `.claude/skills/pm-execution/prd/` | "Write a PRD", "document requirements", full product spec |
-| `stories` | `.claude/skills/pm-execution/stories/` | "Break into stories", "create epics", Jira tickets from requirements |
-| `sprint-report` | `.claude/skills/pm-execution/sprint-report/` | Sprint report or velocity analysis from Jira data |
-| `sprint-sow` | `.claude/skills/pm-execution/sprint-sow/` | "Write the sprint SOW", sprint scope of work document |
-| `sprint-planning` | `.claude/skills/pm-execution/sprint-planning/` | "Plan the sprint", capacity planning, backlog scoping, sprint plan document |
-| `meeting-notes` | `.claude/skills/pm-execution/meeting-notes/` | Meeting transcript → clean minutes and action items |
-| `tech-review` | `.claude/skills/pm-execution/tech-review/` | SA proposal, architecture doc, or integration spec → PM-ready feasibility summary with delivery risks and SA questions |
-| `release-checklist` | `.claude/skills/pm-execution/release-checklist/` | "Are we ready to ship?", go/no-go assessment, release sign-off, pre-deploy checklist |
+| `pm-triage` | `.claude/skills/pm-triage/` | Raw client message, forwarded email, vague request needing triage |
+| `pm-risk-scan` | `.claude/skills/pm-risk-scan/` | Any risk review request; "analyse risks", "risk scan", phase gate |
+| `pm-charter` | `.claude/skills/pm-charter/` | "Write the charter", new project formalisation |
+| `pm-discovery` | `.claude/skills/pm-discovery/` | Discovery planning, workshop facilitation |
+| `pm-prd` | `.claude/skills/pm-prd/` | "Write a PRD", "document requirements", full product spec |
+| `pm-stories` | `.claude/skills/pm-stories/` | "Break into stories", "create epics", Jira tickets from requirements |
+| `pm-sprint-report` | `.claude/skills/pm-sprint-report/` | Sprint report or velocity analysis from Jira data |
+| `pm-sprint-sow` | `.claude/skills/pm-sprint-sow/` | "Write the sprint SOW", sprint scope of work document |
+| `pm-sprint-planning` | `.claude/skills/pm-sprint-planning/` | "Plan the sprint", capacity planning, backlog scoping, sprint plan document |
+| `pm-meeting-notes` | `.claude/skills/pm-meeting-notes/` | Meeting transcript → clean minutes and action items |
+| `pm-tech-review` | `.claude/skills/pm-tech-review/` | SA proposal, architecture doc, or integration spec → PM-ready feasibility summary with delivery risks and SA questions |
+| `pm-release-checklist` | `.claude/skills/pm-release-checklist/` | "Are we ready to ship?", go/no-go assessment, release sign-off, pre-deploy checklist |
 
 ---
 

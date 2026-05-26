@@ -287,6 +287,8 @@ Not sure which skill to use? The `/pm` command analyses your input and routes it
 
 Claude will read the input, identify the right skill (or chain of skills), and ask for your approval before running each step. You stay in control.
 
+Native skill commands are namespaced with a `pm-` prefix (for example `/pm-triage`) to avoid collisions with user-facing command aliases (for example `/triage`).
+
 ---
 
 ## Project Structure
@@ -310,48 +312,47 @@ Claude will read the input, identify the right skill (or chain of skills), and a
     release-checklist.md             # /release-checklist
     new-client.md                    # /new-client
   skills/
-    pm-execution/                    # Full delivery lifecycle skills
-      triage/
-        skill.md                     # Workflow definition
-        reference.md                 # Worked example
-      risk-scan/
-        skill.md
-        reference.md
-        phase-guide.md               # Phase-specific risk patterns
-      charter/
-        skill.md
-        reference.md
-      discovery/
-        skill.md
-        reference.md
-      prd/
-        skill.md
-        reference.md
-        brd-guide.md                 # BRD output variant
-      stories/
-        skill.md
-        reference.md
-        references/
-          story-template.md
-          ac-format.md
-      sprint-report/
-        skill.md
-        reference.md
-      sprint-sow/
-        skill.md
-        reference.md
-      sprint-planning/
-        skill.md
-        reference.md
-      meeting-notes/
-        skill.md
-        reference.md
-      tech-review/
-        skill.md
-        reference.md
-      release-checklist/
-        skill.md
-        reference.md
+    pm-triage/                       # Full delivery lifecycle skills
+      SKILL.md                       # Workflow definition
+      reference.md                   # Worked example
+    pm-risk-scan/
+      SKILL.md
+      reference.md
+      phase-guide.md                 # Phase-specific risk patterns
+    pm-charter/
+      SKILL.md
+      reference.md
+    pm-discovery/
+      SKILL.md
+      reference.md
+    pm-prd/
+      SKILL.md
+      reference.md
+      brd-guide.md                   # BRD output variant
+    pm-stories/
+      SKILL.md
+      reference.md
+      references/
+        story-template.md
+        ac-format.md
+    pm-sprint-report/
+      SKILL.md
+      reference.md
+    pm-sprint-sow/
+      SKILL.md
+      reference.md
+    pm-sprint-planning/
+      SKILL.md
+      reference.md
+    pm-meeting-notes/
+      SKILL.md
+      reference.md
+    pm-tech-review/
+      SKILL.md
+      reference.md
+    pm-release-checklist/
+      SKILL.md
+      reference.md
 clients/                             # Local only — excluded from version control
 ```
 
@@ -375,7 +376,7 @@ Skills will ask you where to save each artefact. You can save locally, or push d
 
 1. Fork the repo
 2. Create a branch: `git checkout -b skill/your-skill-name`
-3. Follow the existing skill structure (`skill.md` + `reference.md` minimum)
+3. Follow the existing skill structure (`SKILL.md` + `reference.md` minimum)
 4. Open a pull request
 
 **Skill authoring checklist:**

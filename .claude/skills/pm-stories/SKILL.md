@@ -1,5 +1,5 @@
 ---
-name: user-stories
+name: pm-stories
 description: >
   Act as a senior PM to transform design files, requirement docs, PRDs, and
   feature descriptions into structured Jira epics and user stories with clean,

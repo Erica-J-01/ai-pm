@@ -24,18 +24,18 @@ Based on the input, select the skills needed from this list and decide their ord
 
 | Skill file | What it produces | Can run in parallel? |
 |---|---|---|
-| `.claude/skills/pm-execution/triage/skill.md` | Structured intake summary | No — must run first if input is raw |
-| `.claude/skills/pm-execution/risk-scan/skill.md` | Risk register with scoring and owners | Yes — can run alongside charter |
-| `.claude/skills/pm-execution/charter/skill.md` | Sponsor-ready project charter | After intake |
-| `.claude/skills/pm-execution/discovery/skill.md` | Discovery plan and output | After charter |
-| `.claude/skills/pm-execution/prd/skill.md` | Product Requirements Document | After discovery |
-| `.claude/skills/pm-execution/stories/skill.md` | Epics and user stories | After PRD |
-| `.claude/skills/pm-execution/sprint-report/skill.md` | Sprint report analysis | Standalone |
-| `.claude/skills/pm-execution/sprint-sow/skill.md` | Sprint Scope of Work | After stories |
-| `.claude/skills/pm-execution/sprint-planning/skill.md` | Sprint plan with capacity, backlog, and key dates | After stories or sprint SOW |
-| `.claude/skills/pm-execution/meeting-notes/skill.md` | Meeting minutes | Standalone |
-| `.claude/skills/pm-execution/tech-review/skill.md` | PM-ready feasibility summary with risks and SA questions | Standalone or after triage |
-| `.claude/skills/pm-execution/release-checklist/skill.md` | Go/no-go checklist with verdict — GO, NO-GO, or CONDITIONAL GO | After sprint SOW, or standalone before any release |
+| `.claude/skills/pm-triage/SKILL.md` | Structured intake summary | No — must run first if input is raw |
+| `.claude/skills/pm-risk-scan/SKILL.md` | Risk register with scoring and owners | Yes — can run alongside charter |
+| `.claude/skills/pm-charter/SKILL.md` | Sponsor-ready project charter | After intake |
+| `.claude/skills/pm-discovery/SKILL.md` | Discovery plan and output | After charter |
+| `.claude/skills/pm-prd/SKILL.md` | Product Requirements Document | After discovery |
+| `.claude/skills/pm-stories/SKILL.md` | Epics and user stories | After PRD |
+| `.claude/skills/pm-sprint-report/SKILL.md` | Sprint report analysis | Standalone |
+| `.claude/skills/pm-sprint-sow/SKILL.md` | Sprint Scope of Work | After stories |
+| `.claude/skills/pm-sprint-planning/SKILL.md` | Sprint plan with capacity, backlog, and key dates | After stories or sprint SOW |
+| `.claude/skills/pm-meeting-notes/SKILL.md` | Meeting minutes | Standalone |
+| `.claude/skills/pm-tech-review/SKILL.md` | PM-ready feasibility summary with risks and SA questions | Standalone or after triage |
+| `.claude/skills/pm-release-checklist/SKILL.md` | Go/no-go checklist with verdict — GO, NO-GO, or CONDITIONAL GO | After sprint SOW, or standalone before any release |
 
 Before proceeding, show the user your plan:
 
@@ -57,7 +57,7 @@ Wait for confirmation before executing.
 
 Run each skill in the agreed order. For each skill:
 
-1. Read the full `skill.md` file for that skill
+1. Read the full `SKILL.md` file for that skill
 2. Read the matching `reference.md` if available
 3. Execute the skill against the input (or the output of the previous skill)
 4. Present the output clearly labelled with the skill name

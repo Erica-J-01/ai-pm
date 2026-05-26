@@ -1,5 +1,5 @@
 ---
-name: intake-triage
+name: pm-triage
 description: Converts vague, messy, or incomplete client and stakeholder requests into structured PM-ready intake summaries with risks, gaps, and next steps. Triggers on raw client messages, unclear feature requests, forwarded emails, stakeholder asks without context, or any input needing PM triage before discovery or planning.
 tools: []
 ---
