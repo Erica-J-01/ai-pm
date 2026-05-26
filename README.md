@@ -2,12 +2,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](https://github.com/Erica-J-01/ai-pm/blob/main/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/Erica-J-01/ai-pm/pulls)
 [![Built for Claude Code](https://img.shields.io/badge/Built%20for-Claude%20Code-blueviolet?style=flat-square)](https://claude.ai/code)
+[![Built for GitHub Copilot](https://img.shields.io/badge/Built%20for-GitHub%20Copilot-24292f?style=flat-square)](https://code.visualstudio.com/docs/copilot/overview)
+[![Built for Amazon Kiro](https://img.shields.io/badge/Built%20for-Amazon%20Kiro-ff9900?style=flat-square)](https://kiro.dev/docs/)
 
-# AI PM Assistant: Your Senior PM Co-Pilot in Claude Code
+# AI PM Assistant: Your Senior PM Co-Pilot for Claude, Copilot, and Kiro
 
 > 12 structured PM skills across the full delivery lifecycle. From raw stakeholder message to production release — without switching tools.
 
-Designed for Claude Code. Drop it into any project and get a senior PM brain on demand.
+Designed for Claude Code, GitHub Copilot, and Amazon Kiro. Drop the matching assistant bundle into your workflow and get the same senior PM system on demand.
 
 ## Start Here
 
@@ -28,7 +30,7 @@ If this project helps you, ⭐ the repo.
 
 Generic AI gives you text. AI PM Assistant gives you structure.
 
-Each skill encodes a proven PM workflow — intake triage, risk analysis, discovery, PRDs, user stories, sprint planning — and walks Claude through it step by step. You get the rigour of a senior PM built into your terminal, not sitting in a workshop somewhere.
+Each skill encodes a proven PM workflow — intake triage, risk analysis, discovery, PRDs, user stories, sprint planning — and walks the assistant through it step by step. You get the rigour of a senior PM built into your workflow, not sitting in a workshop somewhere.
 
 The result: decision-ready artefacts in minutes, not hours.
 
@@ -36,7 +38,7 @@ The result: decision-ready artefacts in minutes, not hours.
 
 ## How It Works
 
-**Skills** are the building blocks. Each skill file gives Claude a defined workflow, output format, and style rules for a specific PM task. Skills are loaded automatically when relevant.
+**Skills** are the building blocks. Each skill file gives the assistant a defined workflow, output format, and style rules for a specific PM task. Skills are loaded automatically when relevant.
 
 **Commands** are slash commands that invoke a skill directly (`/triage`, `/prd`, `/stories`). The **PM Orchestrator** (`/pm`) reads your input, picks the right skill, and chains them in delivery order.
 
@@ -55,10 +57,29 @@ After any command completes, the next logical skill is suggested — just follow
 ```bash
 git clone https://github.com/Erica-J-01/ai-pm.git
 cd ai-pm
+```
+
+Choose the assistant bundle you want to use:
+
+### Claude Code
+
+```bash
 claude .
 ```
 
-Claude reads `CLAUDE.md` and the skills in `.claude/skills/` automatically. No configuration needed.
+Claude reads `CLAUDE.md` and the skills in `.claude/skills/` automatically.
+
+### GitHub Copilot
+
+Open the `copilot/` folder as the workspace root in VS Code.
+
+Copilot reads `.github/copilot-instructions.md`, `.github/skills/`, and `.github/prompts/` from that bundle.
+
+### Amazon Kiro
+
+Open the `kiro/` folder as the workspace root in Kiro.
+
+Kiro reads `AGENTS.md`, `.kiro/skills/`, and `.kiro/steering/` from that bundle.
 
 ---
 
@@ -285,7 +306,7 @@ Not sure which skill to use? The `/pm` command analyses your input and routes it
 /pm Here's a message from my client — [paste anything]
 ```
 
-Claude will read the input, identify the right skill (or chain of skills), and ask for your approval before running each step. You stay in control.
+The assistant will read the input, identify the right skill (or chain of skills), and ask for your approval before running each step. You stay in control.
 
 Native skill commands are namespaced with a `pm-` prefix (for example `/pm-triage`) to avoid collisions with user-facing command aliases (for example `/triage`).
 
@@ -293,67 +314,24 @@ Native skill commands are namespaced with a `pm-` prefix (for example `/pm-triag
 
 ## Project Structure
 
-```
-.claude/
-  CLAUDE.md                          # Behaviour rules, output defaults, skill routing
-  commands/                          # Slash command entry points
-    pm.md                            # /pm — PM Orchestrator
-    triage.md                        # /triage
-    risk-scan.md                     # /risk-scan
-    charter.md                       # /charter
-    discovery.md                     # /discovery
-    prd.md                           # /prd
-    stories.md                       # /stories
-    sprint-report.md                 # /sprint-report
-    sprint-sow.md                    # /sprint-sow
-    sprint-planning.md               # /sprint-planning
-    meeting-notes.md                 # /meeting-notes
-    tech-review.md                   # /tech-review
-    release-checklist.md             # /release-checklist
-    new-client.md                    # /new-client
+```text
+.claude/                             # Claude bundle
+  CLAUDE.md
+  commands/
   skills/
-    pm-triage/                       # Full delivery lifecycle skills
-      SKILL.md                       # Workflow definition
-      reference.md                   # Worked example
-    pm-risk-scan/
-      SKILL.md
-      reference.md
-      phase-guide.md                 # Phase-specific risk patterns
-    pm-charter/
-      SKILL.md
-      reference.md
-    pm-discovery/
-      SKILL.md
-      reference.md
-    pm-prd/
-      SKILL.md
-      reference.md
-      brd-guide.md                   # BRD output variant
-    pm-stories/
-      SKILL.md
-      reference.md
-      references/
-        story-template.md
-        ac-format.md
-    pm-sprint-report/
-      SKILL.md
-      reference.md
-    pm-sprint-sow/
-      SKILL.md
-      reference.md
-    pm-sprint-planning/
-      SKILL.md
-      reference.md
-    pm-meeting-notes/
-      SKILL.md
-      reference.md
-    pm-tech-review/
-      SKILL.md
-      reference.md
-    pm-release-checklist/
-      SKILL.md
-      reference.md
-clients/                             # Local only — excluded from version control
+copilot/                            # GitHub Copilot bundle, open this folder as workspace root
+  README.md
+  .github/
+    copilot-instructions.md
+    prompts/
+    skills/
+kiro/                               # Amazon Kiro bundle, open this folder as workspace root
+  README.md
+  AGENTS.md
+  .kiro/
+    steering/
+    skills/
+clients/                            # Local only — excluded from version control
 ```
 
 ---
@@ -396,8 +374,9 @@ See any existing skill for the pattern.
 
 ## Requirements
 
-- [Claude Code](https://claude.ai/code) — CLI or VS Code extension
-- An Anthropic account with Claude Code access
+- [Claude Code](https://claude.ai/code), or
+- [GitHub Copilot Chat in VS Code](https://code.visualstudio.com/docs/copilot/overview), or
+- [Amazon Kiro](https://kiro.dev/docs/)
 
 ---
 
