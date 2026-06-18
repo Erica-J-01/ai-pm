@@ -4,16 +4,44 @@ All notable changes to AI PM Assistant are recorded here.
 
 ---
 
+## [3.3.1] - 2026-06-18
+
+A dashboard and skill-fidelity patch on top of v3.3.0. No change to the CLI skill chain.
+
+### Risk-scan depth on the artefact (not the orchestrator)
+1. Removed the required risk-scan level choice from the orchestration plan. The orchestrator no longer gates "Complete Orchestration" on a level, and generates one rich artefact that supports all depths.
+2. The depth is now a display control on the risk-scan artefact: a High-level / Mid-level / Detailed switcher that defaults to High-level and can be changed at any time.
+3. Each level follows the skill: register rows (3-5 / 5-8 / 8-12), Top Risk Snapshot at all depths, Key Assumptions and Stakeholder Summary at mid-level and detailed, Prioritisation Reasoning at detailed, and Not Assessed (critical and secondary unknowns) at all levels.
+4. Stub data enriched (assumptions, decisions, stakeholder summary, prioritisation reasoning, not-assessed) so all three levels render meaningfully.
+
+### Skill change
+1. `skills/risk-scan/SKILL.md`: Top Risk Snapshot now applies at all depths (previously Low only); the Depth table and section conditional updated to match.
+
+### PRD UI parity with the v3.3.0 skill
+1. Added the sections the PRD skill produces that the form was missing: Scope Changes from Source Document, Assumptions and Constraints, and Sign-off.
+2. Enriched Dependencies (Type) and Users (Who they are); added a `[NEEDS TARGET]` hint on NFR targets.
+
+### Live orchestrator fidelity
+1. The prompt generator now inlines each skill's `intake.md` into its live prompt, reframed for single-pass generation (use the interview as a coverage checklist, state assumptions or mark `[NEEDS INPUT]` rather than asking). The live AI now receives the intake interview content the SKILL.md tells it to read, which it previously could not access.
+
+### Fixes and polish
+1. Fixed an unterminated JSX expression in `RiskScanView` that broke the production build and the Pages deploy.
+2. The orchestration plan list now animates in on first appearance, not only on re-render.
+3. Removed the dashboard "Hide dashboard" toggle icon.
+4. Removed all em and en dashes across the project, replaced with hyphens.
+
+---
+
 ## [3.3.0] - 2026-06-18
 
 ### PRD intake interview protocol
 
-1. `skills/prd/intake.md` — new 10-question intake interview run before every PRD or BRD. Questions are asked one at a time; six conditional questions trigger only when their signal is detected in the input (`no-discovery`, `stale-input`, `regulated`, `no-out-of-scope`, `integration-heavy`, `locale-specific`). Q10 (open risks and gaps) is the gate: no PRD is generated until it has been answered.
+1. `skills/prd/intake.md` - new 10-question intake interview run before every PRD or BRD. Questions are asked one at a time; six conditional questions trigger only when their signal is detected in the input (`no-discovery`, `stale-input`, `regulated`, `no-out-of-scope`, `integration-heavy`, `locale-specific`). Q10 (open risks and gaps) is the gate: no PRD is generated until it has been answered.
 2. `skills/prd/SKILL.md` updated to `version: 3.1.0`. Restructured into seven numbered steps: intake interview → confirm feature areas → translate source material into requirements → requirement quality rules → error state enumeration → coverage check → output. The old "What to Gather First" table and flat instruction block are replaced by this stepped workflow.
 3. Requirements quality rules tightened: one FR per observable behaviour; no adjectives without numbers; error states are their own FRs; no TBD inside an FR; smell-check list catches copy-pasted deliverables, vague error messages, duplicate FRs, and misplaced process rules.
-4. Coverage check added (Step 6): verifies that performance, security, accessibility, availability, data retention, account deletion, audit logging, API rate limiting, session management, browser/device support, and localisation are each placed in an NFR row, a constraint, or an explicit out-of-scope entry — never silently omitted.
+4. Coverage check added (Step 6): verifies that performance, security, accessibility, availability, data retention, account deletion, audit logging, API rate limiting, session management, browser/device support, and localisation are each placed in an NFR row, a constraint, or an explicit out-of-scope entry - never silently omitted.
 5. Scope Changes section added to the output template: any item the intake interview surfaces that contradicts or extends the source document is logged explicitly as a numbered change with before/after and a confirmation owner.
-6. NFR targets collected during the interview (Q5b) are written into the NFR table immediately with `[NEEDS TARGET]` for unknowns — not deferred to after generation.
+6. NFR targets collected during the interview (Q5b) are written into the NFR table immediately with `[NEEDS TARGET]` for unknowns - not deferred to after generation.
 
 ---
 
@@ -21,7 +49,7 @@ All notable changes to AI PM Assistant are recorded here.
 
 ### Risk-scan pre-scan interview protocol
 
-1. `skills/risk-scan/intake.md` — new structured 13-question interview protocol run before every risk analysis. Questions are asked one at a time; conditional questions trigger only when their signal (date gap, named dependencies, explicit risks, T&M model, multi-phase scope, team composition, compliance requirements, tight timeline, third-party integrations, or ambiguous phase) is detected in the input. The interview gates analysis: no output is generated until Q13 (the open risk question) has been answered.
+1. `skills/risk-scan/intake.md` - new structured 13-question interview protocol run before every risk analysis. Questions are asked one at a time; conditional questions trigger only when their signal (date gap, named dependencies, explicit risks, T&M model, multi-phase scope, team composition, compliance requirements, tight timeline, third-party integrations, or ambiguous phase) is detected in the input. The interview gates analysis: no output is generated until Q13 (the open risk question) has been answered.
 2. `SKILL.md` updated to `version: 3.2.0`. Step 1 now reads `intake.md` and enforces the interview; the old "What to Gather" table is replaced with four rules (one question at a time, scan for signals, no skipping, gate on Q13).
 3. Output quality rules tightened: top-risks detail no longer restates register scores; the stakeholder summary is explicitly a synthesised paragraph, not a risk re-list; a new no-repetition rule across sections is enforced.
 

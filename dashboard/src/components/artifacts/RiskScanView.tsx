@@ -6,9 +6,21 @@ import {
 import { Sparkles } from "lucide-react";
 import {
   type RiskScanPayload, type RiskEntry, type Priority, type HML, type StatusTone, type RagStatus,
-  type RiskProximity,
+  type RiskProximity, type RiskDepth,
   PRIORITY_TONE,
 } from "@/types/pm";
+
+/** Depth label + how many register rows each level shows (high-level shows fewest). */
+const LEVEL_LABEL: Record<RiskDepth, string> = { low: "High-level", medium: "Mid-level", high: "Detailed" };
+const LEVEL_CAP: Record<RiskDepth, number> = { low: 5, medium: 8, high: Infinity };
+const LEVELS: { value: RiskDepth; label: string }[] = [
+  { value: "low", label: "High-level" },
+  { value: "medium", label: "Mid-level" },
+  { value: "high", label: "Detailed" },
+];
+const SEG = "rounded px-2.5 py-1 text-xs font-medium transition-colors";
+/** Priority order for the high-level Top Risk Snapshot (act-now first). */
+const PRIORITY_RANK: Record<Priority, number> = { "act-now": 0, monitor: 1, contingency: 2, log: 3 };
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/store/workspace";
 import { Button } from "@/components/ui/button";
@@ -29,10 +41,10 @@ const RAG_TONE: Record<RagStatus, StatusTone> = { red: "danger", amber: "warning
 const CONFIDENCE_TONE: Record<string, StatusTone> = { High: "success", Medium: "warning", Low: "danger" };
 const PROXIMITY_ORDER: RiskProximity[] = ["Week 1-2", "Month 1", "Month 2-3", "Later"];
 const PROXIMITY_LABEL: Record<RiskProximity, string> = {
-  "Week 1-2":  "Immediate — Week 1–2",
-  "Month 1":   "Near-term — Month 1",
-  "Month 2-3": "Near-term — Month 2–3",
-  "Later":     "Watch — Later",
+  "Week 1-2":  "Immediate - Week 1-2",
+  "Month 1":   "Near-term - Month 1",
+  "Month 2-3": "Near-term - Month 2-3",
+  "Later":     "Watch - Later",
 };
 const PROXIMITY_TONE: Record<RiskProximity, StatusTone> = {
   "Week 1-2":  "danger",
@@ -49,7 +61,28 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
   const [pri, setPri] = useState<Priority | null>(null);
   const [showDash, setShowDash] = useState(vizApproved);
   useEffect(() => { if (vizApproved) setShowDash(true); }, [vizApproved]);
-  const register = pri ? payload.register.filter((r) => r.priority === pri) : payload.register;
+
+  // Effective depth is purely a display choice made on the artefact (the level
+  // switcher below). It always defaults to high-level until the user changes it.
+  // Higher-level scans show fewer rows; everything below derives from `scoped`.
+  const level: RiskDepth = (ws.activeProjectId && ws.riskScanLevel[ws.activeProjectId]) || "low";
+  const scoped = payload.register.slice(0, LEVEL_CAP[level]);
+  const scopedRefs = new Set(scoped.map((r) => r.ref));
+  const matrix = payload.matrix.filter((p) => scopedRefs.has(p.ref));
+  const register = pri ? scoped.filter((r) => r.priority === pri) : scoped;
+
+  // Sections per the skill: Top Risk Snapshot shows at all depths; assumptions +
+  // summary for mid/detailed; prioritisation reasoning for detailed only.
+  const showAssumptions = level !== "low";
+  const showSummary = level !== "low";
+  const showPrioritisation = level === "high";
+  const topRisks = [...scoped]
+    .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority])
+    .slice(0, 3);
+
+  const changeLevel = (lvl: RiskDepth) => {
+    if (ws.activeProjectId) ws.setRiskScanLevel(ws.activeProjectId, lvl);
+  };
 
   const generate = () => {
     setShowDash(true);
@@ -58,23 +91,23 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
 
   // Priority counts for summary cards
   const counts = { "act-now": 0, monitor: 0, contingency: 0, log: 0 } satisfies Record<Priority, number>;
-  for (const r of payload.register) counts[r.priority]++;
+  for (const r of scoped) counts[r.priority]++;
 
   // Category distribution for bar chart
   const catMap: Record<string, number> = {};
-  for (const r of payload.register) catMap[r.category] = (catMap[r.category] ?? 0) + 1;
+  for (const r of scoped) catMap[r.category] = (catMap[r.category] ?? 0) + 1;
   const categoryData = Object.entries(catMap)
     .sort((a, b) => b[1] - a[1])
     .map(([name, count]) => ({ name, count }));
 
   // Timeline: group by proximity
   const proximityGroups: Partial<Record<RiskProximity, typeof payload.register>> = {};
-  for (const r of payload.register) {
+  for (const r of scoped) {
     const key = (r.proximity ?? "Later") as RiskProximity;
     if (!proximityGroups[key]) proximityGroups[key] = [];
     proximityGroups[key]!.push(r);
   }
-  const hasTimeline = payload.register.some((r) => r.proximity);
+  const hasTimeline = scoped.some((r) => r.proximity);
 
   return (
     <div className="space-y-4">
@@ -82,10 +115,10 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Risk Analysis — {payload.project}
+            Risk Analysis - {payload.project}
           </p>
           <p className="text-sm text-muted-foreground">
-            Phase: {payload.phase} · Depth: {payload.depth}
+            Phase: {payload.phase} · Depth: {LEVEL_LABEL[level]}
           </p>
           {payload.recommendation && (
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -95,8 +128,8 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {vizApproved ? (
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowDash((v) => !v)}>
-              <Sparkles className="h-3.5 w-3.5" /> {showDash ? "Hide dashboard" : "Show dashboard"}
+            <Button size="sm" variant="outline" onClick={() => setShowDash((v) => !v)}>
+              {showDash ? "Hide dashboard" : "Show dashboard"}
             </Button>
           ) : (
             <Button size="sm" variant="outline" className="gap-1.5" onClick={generate}>
@@ -107,6 +140,24 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
         </div>
       </div>
 
+      {/* ── Risk scan level switcher (regenerate at a different depth) ──── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground">Risk scan level:</span>
+        <div className="flex rounded-md border border-border p-0.5" role="group" aria-label="Change risk scan level">
+          {LEVELS.map((l) => (
+            <button
+              key={l.value}
+              type="button"
+              onClick={() => changeLevel(l.value)}
+              aria-pressed={level === l.value}
+              className={cn(SEG, level === l.value ? "bg-status-info-bg text-status-info" : "text-muted-foreground hover:bg-muted")}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Conditions banner ──────────────────────────────────────── */}
       {payload.conditions && payload.conditions.length > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 dark:border-amber-900/40 dark:bg-amber-950/30">
@@ -114,6 +165,20 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
           <ul className="space-y-0.5 text-xs text-amber-700 dark:text-amber-400">
             {payload.conditions.map((c, i) => <li key={i}>· {c}</li>)}
           </ul>
+        </div>
+      )}
+
+      {/* ── Top Risk Snapshot (all depths) ─────────────────────────── */}
+      {topRisks.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Top Risk Snapshot</p>
+          <ol className="list-decimal space-y-1 pl-5 text-sm">
+            {topRisks.map((r) => (
+              <li key={r.ref}>
+                <span className="font-mono text-xs text-muted-foreground">{r.ref}</span> {r.risk}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
@@ -129,13 +194,13 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
         />
       </div>
 
-      {showDash && <ExecutiveDashboard register={payload.register} />
+      {showDash && <ExecutiveDashboard register={scoped} />}
 
       {/* ── Heatmap + Category Distribution ───────────────────────── */}
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Heatmap */}
         <div className="rounded-xl border border-border bg-card p-3 shadow-card">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">Risk Heatmap — Likelihood × Impact</p>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Risk Heatmap - Likelihood × Impact</p>
           <ResponsiveContainer width="100%" height={240}>
             <ScatterChart margin={{ top: 8, right: 16, bottom: 24, left: 8 }}>
               <ReferenceArea x1={0} x2={50} y1={0} y2={50} fill="hsl(var(--heat-low))"  fillOpacity={0.55} />
@@ -154,8 +219,8 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
                 label={{ value: "Impact", angle: -90, position: "insideLeft", fontSize: 10 }}
               />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} content={<MatrixTooltip />} />
-              <Scatter data={payload.matrix} isAnimationActive={false}>
-                {payload.matrix.map((p) => (
+              <Scatter data={matrix} isAnimationActive={false}>
+                {matrix.map((p) => (
                   <Cell
                     key={p.ref}
                     fill={PRIORITY_FILL[p.priority]}
@@ -210,10 +275,10 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
         </div>
       </div>
 
-      {/* ── Risk Timeline — Urgency View ───────────────────────────── */}
+      {/* ── Risk Timeline - Urgency View ───────────────────────────── */}
       {hasTimeline && (
         <div className="rounded-xl border border-border bg-card p-3 shadow-card">
-          <p className="mb-3 text-xs font-medium text-muted-foreground">Risk Timeline — Urgency View</p>
+          <p className="mb-3 text-xs font-medium text-muted-foreground">Risk Timeline - Urgency View</p>
           <div className="space-y-3">
             {PROXIMITY_ORDER.map((prox) => {
               const group = proximityGroups[prox];
@@ -318,7 +383,7 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
                 <td className="px-3 py-2 text-muted-foreground">
                   {r.proximity
                     ? <StatusBadge tone={PROXIMITY_TONE[r.proximity]} className="text-[10px]">{r.proximity}</StatusBadge>
-                    : <span className="text-muted-foreground/50">—</span>}
+                    : <span className="text-muted-foreground/50">-</span>}
                 </td>
               </tr>
             ))}
@@ -333,8 +398,8 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
         </table>
       </div>
 
-      {/* ── Key Assumptions ───────────────────────────────────────── */}
-      {payload.assumptions && payload.assumptions.length > 0 && (
+      {/* ── Key Assumptions (mid-level + detailed) ─────────────────── */}
+      {showAssumptions && payload.assumptions && payload.assumptions.length > 0 && (
         <div className="rounded-xl border border-border bg-card shadow-card overflow-x-auto">
           <div className="border-b border-border px-3 py-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Assumptions</p>
@@ -391,11 +456,44 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
         </div>
       )}
 
-      {/* ── Stakeholder Summary ───────────────────────────────────── */}
-      {payload.stakeholderSummary && (
+      {/* ── Stakeholder Summary (mid-level + detailed) ─────────────── */}
+      {showSummary && payload.stakeholderSummary && (
         <blockquote className="rounded-lg border-l-4 border-primary/40 bg-muted/40 px-4 py-3 text-sm italic text-muted-foreground">
           {payload.stakeholderSummary}
         </blockquote>
+      )}
+
+      {/* ── Prioritisation Reasoning (detailed depth only) ─────────── */}
+      {showPrioritisation && payload.prioritisationReasoning && (
+        <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prioritisation Reasoning</p>
+          <p className="text-sm text-muted-foreground">{payload.prioritisationReasoning}</p>
+        </div>
+      )}
+
+      {/* ── Not Assessed (all levels) ──────────────────────────────── */}
+      {payload.notAssessed && (payload.notAssessed.critical.length > 0 || payload.notAssessed.secondary.length > 0) && (
+        <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Not Assessed</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {payload.notAssessed.critical.length > 0 && (
+              <div>
+                <p className="mb-1 text-xs font-medium text-status-danger">Critical unknowns</p>
+                <ul className="list-disc space-y-0.5 pl-5 text-sm text-muted-foreground">
+                  {payload.notAssessed.critical.map((u, i) => <li key={i}>{u}</li>)}
+                </ul>
+              </div>
+            )}
+            {payload.notAssessed.secondary.length > 0 && (
+              <div>
+                <p className="mb-1 text-xs font-medium text-muted-foreground">Secondary unknowns</p>
+                <ul className="list-disc space-y-0.5 pl-5 text-sm text-muted-foreground">
+                  {payload.notAssessed.secondary.map((u, i) => <li key={i}>{u}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

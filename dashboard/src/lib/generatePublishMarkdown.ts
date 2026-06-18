@@ -30,7 +30,7 @@ function table(headers: string[], rows: unknown[][]): string {
 
 /** Escape pipe characters so they don't break table cells. */
 function cell(v: unknown): string {
-  return String(v ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ") || "—";
+  return String(v ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ") || "-";
 }
 
 const PRIORITY_LABEL: Record<string, string> = {
@@ -60,7 +60,7 @@ function renderReleaseChecklist(p: ReleaseChecklistPayload): string {
   md += `**Release:** ${p.release} | **Type:** ${p.releaseType}`;
   if (p.targetDate) md += ` | **Target date:** ${p.targetDate}`;
   md += `\n\n`;
-  md += `**Verdict:** ${p.verdict} — ${p.verdictRationale}\n\n`;
+  md += `**Verdict:** ${p.verdict} - ${p.verdictRationale}\n\n`;
 
   // Summary tally
   md += `## Summary\n\n`;
@@ -75,7 +75,7 @@ function renderReleaseChecklist(p: ReleaseChecklistPayload): string {
     md += `## Blockers\n\n`;
     md += table(
       ["Ref", "Item", "Owner", "Due"],
-      p.blockers.map((b) => [b.ref, b.label, b.owner, b.due ?? "—"]),
+      p.blockers.map((b) => [b.ref, b.label, b.owner, b.due ?? "-"]),
     );
     md += "\n\n";
   }
@@ -109,7 +109,7 @@ function renderDecisionLog(p: DecisionLogPayload): string {
 
 function renderSprintPlan(p: SprintPlanPayload): string {
   let md = `# Sprint Planning\n\n`;
-  md += `**Sprint:** ${p.sprint.number} — ${p.sprint.goal}\n\n`;
+  md += `**Sprint:** ${p.sprint.number} - ${p.sprint.goal}\n\n`;
   if (p.sprint.startDate || p.sprint.endDate) {
     md += `**Dates:** ${p.sprint.startDate ?? "?"} → ${p.sprint.endDate ?? "?"}\n\n`;
   }
@@ -134,7 +134,7 @@ function renderSprintPlan(p: SprintPlanPayload): string {
 }
 
 function renderSprintReport(p: SprintReportPayload): string {
-  let md = `# Sprint Report — ${p.sprint}\n\n`;
+  let md = `# Sprint Report - ${p.sprint}\n\n`;
   md += `**Day:** ${p.day} / ${p.totalDays} | **Status:** ${RAG_LABEL[p.status] ?? p.status} | **Confidence:** ${p.confidence}%\n\n`;
   md += `**Forecast:** ${p.forecast}\n\n`;
 
@@ -204,7 +204,7 @@ function renderRoadmap(p: RoadmapPayload): string {
 
   md += table(
     ["Lane", "Task", "Start Week", "End Week", "Start Date", "End Date"],
-    p.tasks.map((t) => [t.lane, t.name, t.startWeek, t.endWeek, t.startDate ?? "—", t.endDate ?? "—"]),
+    p.tasks.map((t) => [t.lane, t.name, t.startWeek, t.endWeek, t.startDate ?? "-", t.endDate ?? "-"]),
   );
   return md + "\n";
 }
@@ -220,11 +220,11 @@ function renderStories(p: StoriesPayload): string {
       ["Story", "As a…", "I want to…", "So that…", "Points", "Acceptance Criteria"],
       epic.stories.map((s) => [
         s.title,
-        s.asA ?? "—",
-        s.iWant ?? "—",
-        s.soThat ?? "—",
-        s.points ?? "—",
-        (s.acceptanceCriteria ?? []).join("; ") || "—",
+        s.asA ?? "-",
+        s.iWant ?? "-",
+        s.soThat ?? "-",
+        s.points ?? "-",
+        (s.acceptanceCriteria ?? []).join("; ") || "-",
       ]),
     );
     md += "\n\n";

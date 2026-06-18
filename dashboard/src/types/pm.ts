@@ -313,11 +313,14 @@ export interface RiskMatrixPoint {
   priority: Priority;
 }
 
+/** Risk-scan depth: low = high-level (3-5 risks), medium = mid-level (5-8), high = detailed (8-12). */
+export type RiskDepth = "low" | "medium" | "high";
+
 export interface RiskScanPayload {
   skill: "risk-scan";
   project: string;
   phase: DeliveryPhase;
-  depth: "low" | "medium" | "high";
+  depth: RiskDepth;
   verdict: RagStatus;
   /** Overall recommendation from the skill. */
   recommendation?: Recommendation;
@@ -331,6 +334,8 @@ export interface RiskScanPayload {
   assumptions?: RiskAssumption[];
   /** Decisions needed with owners and deadlines. */
   decisionsNeeded?: RiskDecision[];
+  /** Why the top risks are ranked as they are (High/detailed depth only). */
+  prioritisationReasoning?: string;
   /** Areas not assessed due to insufficient data. */
   notAssessed?: { critical: string[]; secondary: string[] };
 }

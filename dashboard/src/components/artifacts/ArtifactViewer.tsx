@@ -69,13 +69,13 @@ export function ArtifactViewer({
       const md = generatePublishMarkdown(execution);
       navigator.clipboard.writeText(md)
         .then(() => notify({ title: "Markdown copied to clipboard", tone: "success" }))
-        .catch(() => notify({ title: "Copy failed — check browser permissions", tone: "danger" }));
+        .catch(() => notify({ title: "Copy failed - check browser permissions", tone: "danger" }));
       return;
     }
 
     if (dest === "local") { notify({ title: "Saved locally", tone: "success" }); return; }
 
-    // Jira, Drive, Notion, Gmail — not yet implemented
+    // Jira, Drive, Notion, Gmail - not yet implemented
     notify({ title: `${dest.charAt(0).toUpperCase() + dest.slice(1)} publishing coming soon`, tone: "info" });
   };
 

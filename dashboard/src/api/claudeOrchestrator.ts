@@ -1,10 +1,10 @@
 /**
- * Live Claude orchestrator — calls api.anthropic.com via the local Vite proxy
+ * Live Claude orchestrator - calls api.anthropic.com via the local Vite proxy
  * at /api/claude/v1/messages. The user's API key is stored in sessionStorage
  * (persisted by the connector system, cleared when the tab closes) and
  * forwarded as a request header; it never leaves the local machine.
  *
- * Skill system prompts are loaded from `virtual:skill-prompts` — a Vite virtual
+ * Skill system prompts are loaded from `virtual:skill-prompts` - a Vite virtual
  * module that reads every skills/<id>/SKILL.md + reference.md at dev-server
  * start. Edits to those files are picked up on the next restart automatically.
  *
@@ -88,14 +88,14 @@ Available skills (use these exact IDs):
 - onboarding: generate an onboarding brief for a new joiner
 
 Rules:
-- Only include skills genuinely needed for the input — do not include all skills by default.
+- Only include skills genuinely needed for the input - do not include all skills by default.
 - Order steps in delivery sequence (e.g. triage before charter, charter before PRD).
 - risk-scan can run in parallel with charter (set parallelizable: true for it).
 - If the input is a meeting transcript, return only meeting-notes.
 - If the input is a raw stakeholder message at pre-project phase, start with triage.
 - If requirements already exist, you may skip triage and start from the appropriate phase.
 
-Return ONLY a valid JSON object — no markdown fences, no extra text:
+Return ONLY a valid JSON object - no markdown fences, no extra text:
 {
   "summary": "One sentence: what you detected in the input and which skills you chose.",
   "steps": [

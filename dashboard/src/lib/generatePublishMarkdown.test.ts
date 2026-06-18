@@ -15,7 +15,7 @@ function exec(payload?: SkillExecution["payload"], markdown = "fallback markdown
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   FALLBACK — no structured payload
+   FALLBACK - no structured payload
    ═══════════════════════════════════════════════════════════════════════ */
 
 describe("fallback (no payload)", () => {
@@ -38,7 +38,7 @@ const RISK_PAYLOAD: RiskScanPayload = {
   matrix: [{ ref: "R1", x: 80, y: 80, priority: "act-now" }],
 };
 
-describe("generatePublishMarkdown — risk-scan", () => {
+describe("generatePublishMarkdown - risk-scan", () => {
   it("includes a # Risk Scan heading", () => {
     expect(generatePublishMarkdown(exec(RISK_PAYLOAD))).toContain("# Risk Scan");
   });
@@ -80,7 +80,7 @@ const SPRINT_PAYLOAD: SprintPlanPayload = {
   plannedLoad: 3, loadRatio: 0.375, capacityThreshold: { min: 0.7, max: 0.8 }, overcommitted: false,
 };
 
-describe("generatePublishMarkdown — sprint-planning", () => {
+describe("generatePublishMarkdown - sprint-planning", () => {
   it("includes sprint number and goal", () => {
     const md = generatePublishMarkdown(exec(SPRINT_PAYLOAD));
     expect(md).toContain("Sprint");
@@ -117,7 +117,7 @@ const STORIES_PAYLOAD: StoriesPayload = {
   }],
 };
 
-describe("generatePublishMarkdown — stories", () => {
+describe("generatePublishMarkdown - stories", () => {
   it("renders each epic as a ## heading", () => {
     expect(generatePublishMarkdown(exec(STORIES_PAYLOAD))).toContain("## Auth Epic");
   });
@@ -145,7 +145,7 @@ const CHECKLIST_PAYLOAD: ReleaseChecklistPayload = {
   blockers: [], verdict: "GO", verdictRationale: "All checks passed.",
 };
 
-describe("generatePublishMarkdown — release-checklist", () => {
+describe("generatePublishMarkdown - release-checklist", () => {
   it("includes the verdict", () => {
     expect(generatePublishMarkdown(exec(CHECKLIST_PAYLOAD))).toContain("GO");
   });
@@ -175,7 +175,7 @@ const DECISION_PAYLOAD: DecisionLogPayload = {
   }],
 };
 
-describe("generatePublishMarkdown — decision-log", () => {
+describe("generatePublishMarkdown - decision-log", () => {
   it("renders a table with Area and Status columns", () => {
     const md = generatePublishMarkdown(exec(DECISION_PAYLOAD));
     expect(md).toContain("| Area |");
@@ -196,7 +196,7 @@ const BUDGET_PAYLOAD: BudgetTrackerPayload = {
   developers: [{ name: "Alice", hours: 100, rate: 200, cost: 20000 }],
 };
 
-describe("generatePublishMarkdown — budget-tracker", () => {
+describe("generatePublishMarkdown - budget-tracker", () => {
   it("renders budget summary table", () => {
     const md = generatePublishMarkdown(exec(BUDGET_PAYLOAD));
     expect(md).toContain("Budget Summary");
@@ -221,7 +221,7 @@ const ROADMAP_PAYLOAD: RoadmapPayload = {
   tasks: [{ name: "Auth", lane: "Sprint 1", startWeek: 1, endWeek: 2, startDate: "2026-07-01", endDate: "2026-07-14" }],
 };
 
-describe("generatePublishMarkdown — roadmap", () => {
+describe("generatePublishMarkdown - roadmap", () => {
   it("includes the goal", () => {
     expect(generatePublishMarkdown(exec(ROADMAP_PAYLOAD))).toContain("Ship MVP");
   });
@@ -247,7 +247,7 @@ const REPORT_PAYLOAD: SprintReportPayload = {
   summary: "Halfway there, pacing well.", priorities: ["Finish auth"], actionsToday: ["Review PR"],
 };
 
-describe("generatePublishMarkdown — sprint-report", () => {
+describe("generatePublishMarkdown - sprint-report", () => {
   it("includes sprint name and confidence", () => {
     const md = generatePublishMarkdown(exec(REPORT_PAYLOAD));
     expect(md).toContain("Sprint 3");
@@ -271,10 +271,10 @@ describe("generatePublishMarkdown — sprint-report", () => {
 });
 
 /* ═══════════════════════════════════════════════════════════════════════
-   DOC PAYLOAD — all section kinds
+   DOC PAYLOAD - all section kinds
    ═══════════════════════════════════════════════════════════════════════ */
 
-describe("generatePublishMarkdown — doc payload section kinds", () => {
+describe("generatePublishMarkdown - doc payload section kinds", () => {
   const docExec = (sections: DocPayload["sections"], status?: DocPayload["status"]): SkillExecution =>
     exec({ skill: "triage", sections, status } as DocPayload);
 

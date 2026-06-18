@@ -106,7 +106,7 @@ export function OrchestratorConsole({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // When the active project changes, reset ALL per-project state so a new
-  // project always starts with a blank console — not with the previous
+  // project always starts with a blank console - not with the previous
   // project's input or the demo pre-fill.
   useEffect(() => {
     dispatch({ type: "reset" });
@@ -194,11 +194,14 @@ export function OrchestratorConsole({
       plan!.steps.map((s) => [s.skill, s.state === "skipped" ? "skipped" : "approved"]),
     ) as Record<SkillId, Decision>;
 
+  const riskScanApproved = () => {
+    const rs = plan?.steps.find((s) => s.skill === "risk-scan");
+    return !!rs && rs.state !== "skipped";
+  };
+
   // Risk dashboard is generated only when risk-scan is approved AND its viz sub-step is approved.
   const recordViz = () => {
-    const rs = plan?.steps.find((s) => s.skill === "risk-scan");
-    const rsApproved = !!rs && rs.state !== "skipped";
-    onVizDecision?.(rsApproved && vizApproved);
+    onVizDecision?.(riskScanApproved() && vizApproved);
   };
 
   /** Instant completion using seeded stub data (no API wait). */
@@ -291,7 +294,7 @@ export function OrchestratorConsole({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           rows={6}
-          placeholder="Paste a stakeholder message, meeting transcript, PRD, or requirements — or drop a PDF here."
+          placeholder="Paste a stakeholder message, meeting transcript, PRD, or requirements - or drop a PDF here."
           className="w-full resize-none bg-transparent text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
         />
 
@@ -358,7 +361,7 @@ export function OrchestratorConsole({
 
       {/* ── Step-by-step plan ── */}
       {plan && (
-        <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+        <div key={plan.id} className="rounded-xl border border-border bg-card p-4 shadow-card">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold">Orchestration Plan</h3>
             <Badge variant="outline" className="text-[11px]">{plan.steps.length} steps</Badge>
@@ -367,7 +370,8 @@ export function OrchestratorConsole({
 
           <ol className="relative space-y-2 pl-6">
             <span className="absolute left-[9px] top-1 bottom-1 w-px bg-border" aria-hidden />
-            <AnimatePresence initial={false}>
+            {/* initial enabled so the staggered list animates in when the plan first appears, not only on re-key */}
+            <AnimatePresence>
               {plan.steps.map((step, i) => (
                 <motion.li
                   key={step.id}
@@ -535,7 +539,7 @@ function OrchestratedHub({ onRerun }: { onRerun: () => void }) {
     <div className="rounded-xl border border-border bg-card p-6 shadow-card">
       <p className="text-sm font-semibold">Project orchestrated</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        This project is set up. Pick a skill on the left to view or edit it — skipped sections can be generated from there anytime.
+        This project is set up. Pick a skill on the left to view or edit it - skipped sections can be generated from there anytime.
       </p>
       <Button variant="outline" size="sm" className="mt-4" onClick={onRerun}>Re-run orchestration</Button>
     </div>

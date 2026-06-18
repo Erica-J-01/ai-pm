@@ -65,14 +65,14 @@ function ClaudeRow({ connector: c }: { connector: McpConnector }) {
     setConnectorApi(c.id, { token: key.trim() });
     setConnectorStatus(c.id, "connected");
     setOpen(false);
-    notify({ title: "Claude API key saved — orchestration is live", tone: "success" });
+    notify({ title: "Claude API key saved - orchestration is live", tone: "success" });
   };
 
   const remove = () => {
     setConnectorApi(c.id, { token: undefined });
     setConnectorStatus(c.id, "disconnected");
     setKey("");
-    notify({ title: "Claude API key removed — using demo mode", tone: "info" });
+    notify({ title: "Claude API key removed - using demo mode", tone: "info" });
   };
 
   return (
@@ -83,7 +83,7 @@ function ClaudeRow({ connector: c }: { connector: McpConnector }) {
             <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", dot)} />
             {c.label}
             <span className="text-xs font-normal text-muted-foreground">
-              {connected ? "live Claude orchestration" : "demo mode — add a key to go live"}
+              {connected ? "live Claude orchestration" : "demo mode - add a key to go live"}
             </span>
           </span>
           <button
@@ -213,7 +213,7 @@ function ConfluenceRow({ connector: c }: { connector: McpConnector }) {
         token: combinedToken,
       });
       setConnectorStatus(c.id, "connected");
-      setTestResult({ ok: true, message: `Connected — ${result.detail}` });
+      setTestResult({ ok: true, message: `Connected - ${result.detail}` });
       notify({ title: `Confluence connected · ${result.detail}`, tone: "success" });
       setOpen(false);
     } catch (e) {
@@ -322,7 +322,7 @@ function ConfluenceRow({ connector: c }: { connector: McpConnector }) {
             />
           </div>
 
-          {/* Email — Cloud only */}
+          {/* Email - Cloud only */}
           {mode === "cloud" && (
             <div className="space-y-1.5">
               <Label htmlFor="cf-conn-email" className="text-xs">Email address</Label>
@@ -465,7 +465,7 @@ function GenericRow({ connector: c }: { connector: McpConnector }) {
       }
     } catch {
       setConnectorStatus(c.id, "error");
-      notify({ title: `${c.label} unreachable (network or CORS — needs a server-side proxy)`, tone: "danger" });
+      notify({ title: `${c.label} unreachable (network or CORS - needs a server-side proxy)`, tone: "danger" });
     } finally {
       setBusy(false);
     }

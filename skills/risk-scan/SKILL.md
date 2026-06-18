@@ -11,7 +11,7 @@ allowed-tools: Read
 
 $ARGUMENTS
 
-*If no input is provided above, ask: "Please share the project context — name, phase, timeline, known risks, and any recent changes."*
+*If no input is provided above, ask: "Please share the project context - name, phase, timeline, known risks, and any recent changes."*
 
 ---
 
@@ -20,7 +20,7 @@ $ARGUMENTS
 Before writing any analysis, read `skills/risk-scan/intake.md` and follow the interview protocol exactly.
 
 - Scan the input for signals listed in intake.md to determine which conditional questions apply
-- Ask **one question at a time** — present the question, offer the suggested answers, wait for the response, then move to the next
+- Ask **one question at a time** - present the question, offer the suggested answers, wait for the response, then move to the next
 - Do not skip the interview even if the input appears complete
 - Do not proceed to analysis until Q13 (the open risk question) has been answered
 
@@ -60,8 +60,8 @@ If insufficient information exists to assess an area, record it in Not Assessed 
 | Depth | When | Risks | Sections to include |
 |---|---|---|---|
 | Low | "quick", "brief", initial pre-screen after triage | 3-5 | Overall Verdict, Top Risk Snapshot, Risk Register, Not Assessed |
-| Medium | default | 5-8 | Full output including Key Assumptions |
-| High | "thorough", "board report" | 8-12 | Full output including Key Assumptions and Prioritisation Reasoning |
+| Medium | default | 5-8 | Full output including Top Risk Snapshot and Key Assumptions |
+| High | "thorough", "board report" | 8-12 | Full output including Top Risk Snapshot, Key Assumptions, and Prioritisation Reasoning |
 
 Use Low depth as a fast pre-screen. Prefer Medium for most reviews. Reserve High for major investments, board discussions, regulatory reviews, or critical phase gates.
 
@@ -165,7 +165,7 @@ Maximum 5 assumptions.
 ---
 
 ### Top Risk Snapshot
-*(Low depth only)*
+*(All depths)*
 
 1. [Most significant risk]
 2. [Second most significant risk]
@@ -183,12 +183,12 @@ Maximum 3 items.
 
 ---
 
-### Top Risks — Detail
+### Top Risks - Detail
 *(Every 🔴 risk; if none, top 2 🟡)*
 
-Expand only on what the register table cannot hold. Do not restate the risk description, scores, or owner — those are already in the table.
+Expand only on what the register table cannot hold. Do not restate the risk description, scores, or owner - those are already in the table.
 
-**R[N] — [Short name]**
+**R[N] - [Short name]**
 
 - Root cause: [Underlying reason this risk exists]
 - Why exposed: [What in this specific project creates the exposure]
@@ -202,7 +202,7 @@ Expand only on what the register table cannot hold. Do not restate the risk desc
 
 > "We are at risk of [outcome] due to [cause]. Recommended action: [next step]."
 
-Write as an executive paragraph covering: dominant risk theme, key trade-off leadership must make, and the single most important next action. Do not re-list individual risks by name or restate register content — synthesise only.
+Write as an executive paragraph covering: dominant risk theme, key trade-off leadership must make, and the single most important next action. Do not re-list individual risks by name or restate register content - synthesise only.
 
 ---
 

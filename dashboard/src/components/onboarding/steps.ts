@@ -174,6 +174,12 @@ export const STEPS: OnbStep[] = [
     { name: "attendees", label: "Attendees", kind: "tags", placeholder: "Type a name and press Enter" },
   ]},
   { id: "prd", title: "PRD", intro: "Document the requirements.", fields: [
+    { name: "scopeChanges", label: "Scope changes from source", kind: "list", addLabel: "Add scope change", itemFields: [
+      { name: "change", label: "Change", kind: "text" },
+      { name: "original", label: "Original (source says)", kind: "text" },
+      { name: "updated", label: "Updated (PRD reflects)", kind: "text" },
+      { name: "reason", label: "Reason / confirmed by", kind: "text" },
+    ]},
     { name: "background", label: "Purpose & background", kind: "textarea", required: true },
     { name: "goals", label: "Goals & success metrics", kind: "list", addLabel: "Add goal", required: true, itemFields: [
       { name: "goal", label: "Goal", kind: "text" },
@@ -182,7 +188,14 @@ export const STEPS: OnbStep[] = [
     ]},
     { name: "users", label: "Users & stakeholders", kind: "list", addLabel: "Add user", itemFields: [
       { name: "role", label: "Role", kind: "text" },
+      { name: "who", label: "Who they are", kind: "text" },
       { name: "need", label: "Primary need", kind: "text" },
+    ]},
+    { name: "assumptions", label: "Assumptions (validate before build)", kind: "list", addLabel: "Add assumption", itemFields: [
+      { name: "assumption", label: "Assumption", kind: "text" },
+    ]},
+    { name: "constraints", label: "Constraints (fixed)", kind: "list", addLabel: "Add constraint", itemFields: [
+      { name: "constraint", label: "Constraint", kind: "text" },
     ]},
     { name: "functional", label: "Functional requirements", kind: "list", addLabel: "Add requirement", required: true, itemFields: [
       { name: "requirement", label: "Requirement", kind: "text" },
@@ -192,13 +205,14 @@ export const STEPS: OnbStep[] = [
     { name: "nonFunctional", label: "Non-functional requirements", kind: "list", addLabel: "Add NFR", itemFields: [
       { name: "category", label: "Category", kind: "text" },
       { name: "requirement", label: "Requirement", kind: "text" },
-      { name: "target", label: "Target", kind: "text" },
+      { name: "target", label: "Target", kind: "text", placeholder: "[NEEDS TARGET] if unknown" },
     ]},
     { name: "outOfScope", label: "Out of scope", kind: "list", addLabel: "Add exclusion", itemFields: [
       { name: "item", label: "Excluded", kind: "text" },
     ]},
     { name: "dependencies", label: "Dependencies", kind: "list", addLabel: "Add dependency", itemFields: [
       { name: "dependency", label: "Dependency", kind: "text" },
+      { name: "type", label: "Type", kind: "text" },
       { name: "owner", label: "Owner", kind: "text" },
       { name: "status", label: "Status", kind: "text" },
     ]},
@@ -206,6 +220,12 @@ export const STEPS: OnbStep[] = [
       { name: "question", label: "Question", kind: "text" },
       { name: "owner", label: "Who can answer", kind: "text" },
       { name: "by", label: "By when", kind: "text" },
+    ]},
+    { name: "signOff", label: "Sign-off", kind: "list", addLabel: "Add approver", itemFields: [
+      { name: "role", label: "Role", kind: "text" },
+      { name: "name", label: "Name", kind: "text" },
+      { name: "status", label: "Status", kind: "text" },
+      { name: "date", label: "Date", kind: "text" },
     ]},
   ]},
   { id: "stories", title: "User Stories", intro: "Add epics; each holds its own stories.", fields: [
@@ -499,14 +519,26 @@ export const TEST_DATA: OnbData = {
     attendees: ["PM", "Tech lead", "QA lead", "Sponsor"],
   },
   prd: {
+    scopeChanges: [
+      { change: "In-app notification centre added", original: "SOW scoped email only", updated: "Email MVP + optional in-app centre (Could)", reason: "Confirmed by Sarah on kickoff call" },
+      { change: "SMS deferred", original: "Brief implied SMS at launch", updated: "SMS moved to phase 2", reason: "Confirmed by Marcus, capacity" },
+    ],
     background: "Enterprise clients need proactive notification of payment failures. This PRD covers the email MVP delivered on the existing Kafka event bus, with configurable recipients per account.",
     goals: [
       { goal: "Proactive failure notifications", metric: "Event-to-email time", target: "< 60s" },
       { goal: "Reduce support tickets", metric: "Payment-confusion tickets", target: "-40% in 60 days" },
     ],
     users: [
-      { role: "Enterprise admin", need: "Configure who receives notifications" },
-      { role: "Finance contact", need: "Know about failures immediately" },
+      { role: "Enterprise admin", who: "Manages the client's account settings", need: "Configure who receives notifications" },
+      { role: "Finance contact", who: "Named billing owner at the client", need: "Know about failures immediately" },
+    ],
+    assumptions: [
+      { assumption: "The Kafka payment_failed event fires reliably for all failure types." },
+      { assumption: "Clients keep recipient lists current in account settings." },
+    ],
+    constraints: [
+      { constraint: "Must reuse the existing Kafka event bus (no new infrastructure)." },
+      { constraint: "Launch before the industry conference in 6 weeks." },
     ],
     functional: [
       { requirement: "Send email within 60s of payment_failed", priority: "Must", notes: "Kafka consumer triggers this" },
@@ -520,12 +552,16 @@ export const TEST_DATA: OnbData = {
     ],
     outOfScope: [{ item: "SMS / push" }, { item: "Webhook delivery (phase 2)" }, { item: "Custom templates per client" }],
     dependencies: [
-      { dependency: "Kafka payment topic", owner: "Platform", status: "Available" },
-      { dependency: "SendGrid prod API key", owner: "Infra", status: "Pending" },
+      { dependency: "Kafka payment topic", type: "Internal platform", owner: "Platform", status: "Available" },
+      { dependency: "SendGrid prod API key", type: "Third-party API", owner: "Infra", status: "Pending" },
     ],
     openQuestions: [
       { question: "Email delivery failure: retry or alert?", owner: "Marcus", by: "Week 1" },
       { question: "Is a notification history view required?", owner: "Sarah", by: "Week 1" },
+    ],
+    signOff: [
+      { role: "Product Owner", name: "Sarah Chen", status: "Pending", date: "" },
+      { role: "Tech Lead", name: "Marcus R", status: "Pending", date: "" },
     ],
   },
   stories: {

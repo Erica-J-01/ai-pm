@@ -1,6 +1,6 @@
 import type {
   SkillExecution, SkillId, RagStatus, Priority, HML, Detectability, Velocity,
-  RiskScanPayload, RiskEntry, RiskMatrixPoint,
+  RiskScanPayload, RiskEntry, RiskMatrixPoint, RiskAssumption, RiskDecision, Recommendation,
   StoriesPayload,
   ReleaseChecklistPayload, ReleaseCategory, ReleaseCategoryId, ChecklistItem, ChecklistStatus, ChecklistTally, ReleaseVerdict,
   SprintPlanPayload, BacklogItem, BacklogPriority, CapacityRow,
@@ -29,6 +29,55 @@ function derivePriority(l: string, i: string): Priority {
   return "log";
 }
 
+/**
+ * Stub extras so the three risk-scan levels each render the sections the skill
+ * specifies: mid-level adds Key Assumptions + Stakeholder Summary; detailed adds
+ * Prioritisation Reasoning on top. The view (RiskScanView) gates these by level.
+ */
+const RISK_STUB_EXTRAS: {
+  recommendation: Recommendation;
+  conditions: string[];
+  assumptions: RiskAssumption[];
+  decisionsNeeded: RiskDecision[];
+  stakeholderSummary: string;
+  prioritisationReasoning: string;
+  notAssessed: { critical: string[]; secondary: string[] };
+} = {
+  recommendation: "Proceed with Conditions",
+  conditions: [
+    "Confirm the third-party integration spec before sprint 1.",
+    "Name an owner for data migration sign-off.",
+  ],
+  assumptions: [
+    { assumption: "The current team stays intact through delivery.", confidence: "Medium", riskIfWrong: "Re-planning and onboarding cost a sprint." },
+    { assumption: "Third-party API limits are sufficient for launch volume.", confidence: "Low", riskIfWrong: "Throttling forces a redesign of the sync layer." },
+    { assumption: "No regulatory review is required before go-live.", confidence: "Medium", riskIfWrong: "Launch slips pending compliance sign-off." },
+    { assumption: "Stakeholders are available for weekly decision points.", confidence: "High", riskIfWrong: "Decisions stall and block dependent work." },
+    { assumption: "Existing data is clean enough to migrate as-is.", confidence: "Low", riskIfWrong: "Migration needs a cleansing phase, adding scope." },
+  ],
+  decisionsNeeded: [
+    { decision: "Confirm launch scope (MVP vs full).", owner: "Product Sponsor", by: "End of week 1", impactIfDelayed: "Sprint planning cannot finalise." },
+    { decision: "Approve the third-party vendor contract.", owner: "Procurement", by: "Before sprint 1", impactIfDelayed: "Integration work cannot start." },
+    { decision: "Sign off the data migration approach.", owner: "Tech Lead", by: "Sprint 1", impactIfDelayed: "Migration risk stays unmitigated." },
+    { decision: "Agree the rollback plan for launch.", owner: "Delivery Lead", by: "Pre-launch", impactIfDelayed: "Go/no-go cannot be assessed." },
+    { decision: "Confirm support coverage for launch week.", owner: "Ops Manager", by: "Pre-launch", impactIfDelayed: "Incident response is unclear." },
+  ],
+  stakeholderSummary:
+    "We are at risk of a delayed launch driven by unconfirmed third-party integration and data migration scope. The trade-off for leadership is holding the date for full scope versus shipping a reduced MVP on time. The single most important next action is to lock the vendor integration spec this week.",
+  prioritisationReasoning:
+    "Top risks are ranked above their raw likelihood and impact because detectability and velocity elevate them: the integration failure is hard to detect until late and moves fast once triggered, while the migration risk compounds silently until cutover. Risks that are easy to detect or slow to materialise rank lower even at comparable impact.",
+  notAssessed: {
+    critical: [
+      "Production load profile - no performance or load testing has been scoped yet.",
+      "Security review of the data-handling path - not yet booked.",
+    ],
+    secondary: [
+      "Third-party vendor SLAs under failure conditions.",
+      "Long-term support and on-call ownership after launch.",
+    ],
+  },
+};
+
 function buildRiskScan(values: StepValues): RiskScanPayload {
   const register: RiskEntry[] = rows(values, "risks")
     .filter((r) => r.risk?.trim())
@@ -52,7 +101,10 @@ function buildRiskScan(values: StepValues): RiskScanPayload {
   }));
   const verdict: RagStatus = register.some((e) => e.priority === "act-now")
     ? "red" : register.some((e) => e.priority !== "log") ? "amber" : "green";
-  return { skill: "risk-scan", project: "This project", phase: "pre-project", depth: "medium", verdict, register, matrix };
+  return {
+    skill: "risk-scan", project: "This project", phase: "pre-project", depth: "medium",
+    verdict, register, matrix, ...RISK_STUB_EXTRAS,
+  };
 }
 
 function buildStories(values: StepValues): StoriesPayload {

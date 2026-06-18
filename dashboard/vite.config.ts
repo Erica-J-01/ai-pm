@@ -7,7 +7,7 @@ import { ALLOWED_PROXY_METHODS, isBlockedTarget } from "./src/lib/proxyGuard";
  * Proxies POST /api/claude/v1/messages -> https://api.anthropic.com/v1/messages.
  * The API key is read from the x-claude-api-key request header (set by the
  * browser from localStorage) and forwarded as x-api-key. The target is always
- * the Anthropic API — no SSRF surface.
+ * the Anthropic API - no SSRF surface.
  */
 function claudeProxyPlugin() {
   return {
@@ -92,7 +92,7 @@ function confluenceProxyPlugin() {
           if (isBlockedTarget(targetUrl)) {
             res.statusCode = 403;
             res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "Target URL not permitted — must be an HTTPS external host" }));
+            res.end(JSON.stringify({ error: "Target URL not permitted - must be an HTTPS external host" }));
             return;
           }
 

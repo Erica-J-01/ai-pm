@@ -51,7 +51,7 @@ const BASE_PARAMS = {
 };
 
 /* ═══════════════════════════════════════════════════════════════════════
-   URL NORMALISATION (apiBase)  — tested indirectly via the proxy call
+   URL NORMALISATION (apiBase)  - tested indirectly via the proxy call
    ═══════════════════════════════════════════════════════════════════════ */
 
 describe("URL normalisation (apiBase)", () => {
@@ -108,7 +108,7 @@ describe("auth header construction", () => {
 });
 
 /* ═══════════════════════════════════════════════════════════════════════
-   publishToConfluence — happy path & error paths
+   publishToConfluence - happy path & error paths
    ═══════════════════════════════════════════════════════════════════════ */
 
 describe("publishToConfluence", () => {

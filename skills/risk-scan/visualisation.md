@@ -56,7 +56,7 @@ Visualisations should answer one or more of the following:
 
 Avoid creating charts that add little decision-making value.
 
-Prefer 3–5 meaningful visualisations over many low-value charts.
+Prefer 3-5 meaningful visualisations over many low-value charts.
 
 Do not repeat information already obvious from the report.
 
@@ -100,9 +100,9 @@ Use values from the Risk Register.
 
 Group risks by proximity:
 
-- Week 1–2
+- Week 1-2
 - Month 1
-- Month 2–3
+- Month 2-3
 - Later
 
 Purpose:

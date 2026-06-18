@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import type {
-  ClientContext, ConnectionStatus, ConnectorId, McpConnector, ProjectContext, SkillExecution, SkillId,
+  ClientContext, ConnectionStatus, ConnectorId, McpConnector, ProjectContext, RiskDepth, SkillExecution, SkillId,
 } from "@/types/pm";
 
 /* ── Connector credential persistence (sessionStorage) ───────────────── */
@@ -20,7 +20,7 @@ function loadPersistedApis(): PersistedApis {
 
 function persistApis(apis: PersistedApis) {
   try { sessionStorage.setItem(CONNECTOR_STORAGE_KEY, JSON.stringify(apis)); }
-  catch { /* storage unavailable — in-memory only */ }
+  catch { /* storage unavailable - in-memory only */ }
 }
 
 function mergePersistedConnectors(defaults: McpConnector[]): McpConnector[] {
@@ -104,6 +104,10 @@ interface WorkspaceValue {
   riskVizApproved: Record<string, boolean>;
   /** Record the risk visualisation decision for a project. */
   setRiskViz: (projectId: string, approved: boolean) => void;
+  /** Per-project: the chosen risk-scan depth (high-level / mid-level / detailed). */
+  riskScanLevel: Record<string, RiskDepth>;
+  /** Record the chosen risk-scan level for a project. */
+  setRiskScanLevel: (projectId: string, level: RiskDepth) => void;
   selectClient: (id: string) => void;
   selectProject: (id: string) => void;
   selectSkill: (id: SkillId) => void;
@@ -182,6 +186,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [riskVizApproved, setRiskVizApproved] = useState<Record<string, boolean>>({ "p-portal": true, "p-rebuild": true });
   const setRiskViz = useCallback((projectId: string, approved: boolean) => {
     setRiskVizApproved((m) => ({ ...m, [projectId]: approved }));
+  }, []);
+  // Risk-scan level is a per-project display choice made on the artefact; it
+  // defaults to high-level (see RiskScanView) until the user picks another.
+  const [riskScanLevel, setRiskScanLevelState] = useState<Record<string, RiskDepth>>({});
+  const setRiskScanLevel = useCallback((projectId: string, level: RiskDepth) => {
+    setRiskScanLevelState((m) => ({ ...m, [projectId]: level }));
   }, []);
   // Claude-generated executions keyed as "${projectId}::${skill}"
   const [claudeExecMap, setClaudeExecMap] = useState<Record<string, import("@/types/pm").SkillExecution>>({});
@@ -409,14 +419,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const value = useMemo<WorkspaceValue>(
     () => ({
       clients, projects, connectors, activeClientId, activeProjectId, activeSkill, current, history,
-      editingSkill, editingRecordId, artifactValues, records, orchestratedProjects, skillStatus, riskVizApproved, setRiskViz,
+      editingSkill, editingRecordId, artifactValues, records, orchestratedProjects, skillStatus, riskVizApproved, setRiskViz, riskScanLevel, setRiskScanLevel,
       selectClient, selectProject, selectSkill, pushExecution, showExecution,
       addClient, addProject, setConnectorStatus, setConnectorApi,
       beginEdit, endEdit, saveArtifactValues, completeOrchestration, previewSkill, generateSkill,
       ensureRecords, addRecord, updateRecordMeta, saveRecord, openRecord, setClaudeExecution,
     }),
     [clients, projects, connectors, activeClientId, activeProjectId, activeSkill, current, history,
-      editingSkill, editingRecordId, artifactValues, records, orchestratedProjects, skillStatus, riskVizApproved, setRiskViz,
+      editingSkill, editingRecordId, artifactValues, records, orchestratedProjects, skillStatus, riskVizApproved, setRiskViz, riskScanLevel, setRiskScanLevel,
       selectClient, selectProject, selectSkill, pushExecution, showExecution,
       addClient, addProject, setConnectorStatus, setConnectorApi,
       beginEdit, endEdit, saveArtifactValues, completeOrchestration, previewSkill, generateSkill,

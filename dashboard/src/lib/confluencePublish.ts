@@ -147,7 +147,7 @@ export interface ConfluenceTestResult {
 /**
  * Verify credentials by fetching the space list.
  * Throws a descriptive Error on auth failure or unexpected status.
- * A network/CORS failure surfaces as a "Failed to fetch" Error — callers
+ * A network/CORS failure surfaces as a "Failed to fetch" Error - callers
  * should detect that string and show a proxy-needed message.
  */
 export async function testConfluenceConnection(params: {
@@ -167,7 +167,7 @@ export async function testConfluenceConnection(params: {
 
   if (res.status === 401 || res.status === 403) {
     throw new Error(
-      "Invalid credentials — 401 Unauthorised. " +
+      "Invalid credentials - 401 Unauthorised. " +
       "For Confluence Cloud check your email address and API token. " +
       "For Server / DC check your Personal Access Token.",
     );
@@ -227,7 +227,7 @@ export async function publishToConfluence(
     _links?: { webui?: string; base?: string };
   };
 
-  // Prefer the base URL from the API response (_links.base) — it is always the
+  // Prefer the base URL from the API response (_links.base) - it is always the
   // correct Confluence origin. Fall back to the user-supplied baseUrl.
   const origin = (data._links?.base ?? baseUrl).replace(/\/$/, "");
   const webuiPath = data._links?.webui ?? `/wiki/spaces/${spaceKey}/pages/${data.id}`;
@@ -256,7 +256,7 @@ export async function updateConfluencePage(
 
   const searchRes = await confluenceFetch(searchUrl, "GET", authHeader);
   if (!searchRes.ok) {
-    throw new Error(`Could not find existing page — Confluence responded ${searchRes.status}`);
+    throw new Error(`Could not find existing page - Confluence responded ${searchRes.status}`);
   }
 
   const searchData = await searchRes.json() as {
