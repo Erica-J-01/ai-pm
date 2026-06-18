@@ -38,7 +38,64 @@ const INTAKE_FRAMING = [
   "  the quality bar it sets - when shaping the artefact.",
 ].join("\n");
 
+/**
+ * Parse an intake.md interview into structured questions for the dashboard's
+ * intake UI. Each `### Q<id> - <title> [<bracket>]` block yields a question with
+ * its blockquote prompt, suggested-answer bullets, conditional flag, and whether
+ * it is the gate (bracket says "gate", else the last question).
+ */
+function parseIntake(md) {
+  const questions = [];
+  let cur = null;
+  let inSuggested = false;
+  const push = () => { if (cur) questions.push(cur); };
+
+  for (const line of md.split("\n")) {
+    const h = /^###\s+(Q\S+)\s*[-–]\s*(.+?)\s*\[(.*?)\]\s*$/.exec(line);
+    if (h) {
+      push();
+      const bracket = h[3];
+      cur = {
+        id: h[1],
+        title: h[2].trim(),
+        prompt: "",
+        suggested: [],
+        conditional: /ask if/i.test(bracket),
+        condition: bracket.trim(),
+        gate: /gate/i.test(bracket),
+      };
+      inSuggested = false;
+      continue;
+    }
+    if (!cur) continue;
+    if (/^\s*\*\*Suggested answers:\*\*/i.test(line)) { inSuggested = true; continue; }
+    if (!cur.prompt) {
+      const q = /^>\s*"?(.+?)"?\s*$/.exec(line);
+      if (q) { cur.prompt = q[1].trim().replace(/\*\*/g, "").replace(/`/g, ""); continue; }
+    }
+    if (inSuggested) {
+      const b = /^\s*-\s+(.+?)\s*$/.exec(line);
+      if (b) {
+        const a = b[1]
+          .replace(/^[A-Za-z]\)\s*/, "")
+          .replace(/\*\*/g, "").replace(/`/g, "")
+          .replace(/\s*\*\(default\)\*/i, "")
+          .trim();
+        if (a) cur.suggested.push(a);
+        continue;
+      }
+      inSuggested = false; // first non-bullet ends the list
+    }
+  }
+  push();
+  if (questions.length && !questions.some((q) => q.gate)) {
+    questions[questions.length - 1].gate = true;
+  }
+  return questions;
+}
+
 const prompts = {};
+const intakeBySkill = {};
 
 for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
   if (!entry.isDirectory()) continue;
@@ -63,6 +120,7 @@ for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
   if (fs.existsSync(intakeFile)) {
     const intake = fs.readFileSync(intakeFile, "utf-8").replace(/^---[\s\S]*?---\n+/, "").trim();
     skill = skill + "\n\n---\n\n" + INTAKE_FRAMING + "\n\n" + intake;
+    intakeBySkill[skillId] = parseIntake(intake); // structured questions for the intake UI
   }
 
   // Append reference.md worked example when present
@@ -93,3 +151,27 @@ lines.push("};");
 fs.writeFileSync(outFile, lines.join("\n"), "utf-8");
 console.log(`✓ Generated src/api/skillPrompts.ts (${Object.keys(prompts).length} skills)`);
 console.log("  Skills:", Object.keys(prompts).join(", "));
+
+// ── intake questions (structured, for the dashboard intake UI) ──
+const intakeOut = path.resolve(__dirname, "../src/api/intakeQuestions.ts");
+const intakeLines = [
+  "/**",
+  " * Auto-generated from skills/<id>/intake.md - do not edit by hand.",
+  " * Run `node scripts/generateSkillPrompts.mjs` to regenerate.",
+  " */",
+  "",
+  "export interface IntakeQuestion {",
+  "  id: string;",
+  "  title: string;",
+  "  prompt: string;",
+  "  suggested: string[];",
+  "  conditional: boolean;",
+  "  condition: string;",
+  "  gate: boolean;",
+  "}",
+  "",
+  `export const INTAKE_QUESTIONS: Record<string, IntakeQuestion[]> = ${JSON.stringify(intakeBySkill, null, 2)};`,
+  "",
+];
+fs.writeFileSync(intakeOut, intakeLines.join("\n"), "utf-8");
+console.log(`✓ Generated src/api/intakeQuestions.ts (${Object.keys(intakeBySkill).length} skills with intake)`);

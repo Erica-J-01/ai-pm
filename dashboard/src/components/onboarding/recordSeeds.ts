@@ -32,8 +32,8 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
       sprint: "Sprint 2 - Webhooks",
       day: "9", totalDays: "10", status: "green", confidence: "88",
       committed: "18", completed: "16",
-      forecast: "All P0/P1 complete; NOTIF-10 carried to backlog.",
-      summary: "Sprint 2 is green. Webhook delivery and signing shipped; only the load test remains before release.",
+      forecast: "All P0/P1 complete. NOTIF-10 carried to backlog.",
+      summary: "Sprint 2 is green. Webhook delivery and signing shipped, and only the load test remains before release.",
       priorities: [{ item: "Schedule the webhook load test before the release" }, { item: "Confirm rollback runbook reviewed" }],
       topRisks: [{ risk: "Load test for webhook signing still pending" }],
       actionsToday: [{ item: "Book a load-test window with infra" }],
@@ -101,7 +101,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
       documentType: "Design note",
       summary: "Outbound webhook service with HMAC signing, exponential-backoff retries, and a dead-letter queue for failed deliveries.",
       implications: [
-        { item: "Reuses the notification service; ~5 days build" },
+        { item: "Reuses the notification service, ~5 days build" },
         { item: "Needs a per-client signing secret store" },
       ],
       risks: [
@@ -113,7 +113,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
         { question: "Where are per-client signing secrets stored?" },
         { question: "What is the retry ceiling before dead-lettering?" },
       ],
-      scopeImplications: "Signing secret store is new work not in the Sprint 1 estimate; size it before committing.",
+      scopeImplications: "Signing secret store is new work not in the Sprint 1 estimate. Size it before committing.",
       verdict: "Feasible - confirm secret storage before build.",
     }},
   ],
@@ -121,7 +121,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     { title: "Sprint 1 retro", date: "2026-06-19", values: TEST_DATA.retrospective },
     { title: "Sprint 2 retro", date: "2026-07-02", values: {
       sprint: "Sprint 2",
-      outcome: "Webhooks shipped; only the load test outstanding.",
+      outcome: "Webhooks shipped. Only the load test outstanding.",
       attendees: ["Marcus", "Aiko", "Lin", "Priya", "PM"],
       wentWell: [{ item: "Webhook spike de-risked the build" }, { item: "Zero carryover on P0 items" }],
       didnt: [{ item: "Load testing slipped again", impact: "Release gated on an unrun test" }],
@@ -134,7 +134,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     { title: "Week 3 update", date: "2026-06-27", values: {
       audience: "Sarah Chen (Sponsor)",
       status: "On track",
-      headline: "Email MVP shipped to staging; webhooks on track for the conference.",
+      headline: "Email MVP shipped to staging. Webhooks on track for the conference.",
       progress: [
         { item: "Notification engine live in staging" },
         { item: "Webhook delivery service in build" },

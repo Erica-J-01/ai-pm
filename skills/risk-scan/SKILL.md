@@ -114,7 +114,7 @@ Before finalising the report:
 - Include product, customer, and adoption risks where relevant.
 - If a major risk area cannot be evaluated, record it in Not Assessed.
 - Prefer fewer high-quality risks over many generic risks.
-- No information should be repeated across sections: the Register holds scores and ownership; Top Risks Detail adds root cause and action only; Stakeholder Summary synthesises themes, not individual risks; Key Assumptions must be distinct from risks in the register.
+- No information should be repeated across sections. The Register holds scores and ownership. Top Risks Detail adds root cause and action only. Stakeholder Summary synthesises themes rather than individual risks. Key Assumptions must be distinct from risks in the register.
 
 Do not generate more than:
 - 5 assumptions
@@ -184,7 +184,7 @@ Maximum 3 items.
 ---
 
 ### Top Risks - Detail
-*(Every 🔴 risk; if none, top 2 🟡)*
+*(Every 🔴 risk. If none, the top 2 🟡)*
 
 Expand only on what the register table cannot hold. Do not restate the risk description, scores, or owner - those are already in the table.
 

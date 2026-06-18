@@ -78,13 +78,13 @@ export const SAMPLE_ARTIFACTS: Partial<Record<SkillId, SkillExecution>> = {
       { ref: "R5", x: 50, y: 50, priority: "monitor" },
     ],
     assumptions: [
-      { assumption: "Kafka event layer is already deployed and accessible in the production environment", confidence: "Medium", riskIfWrong: "Real-time delivery is blocked; fallback to polling adds 3-5 days of rework" },
+      { assumption: "Kafka event layer is already deployed and accessible in the production environment", confidence: "Medium", riskIfWrong: "Real-time delivery is blocked, and fallback to polling adds 3-5 days of rework" },
       { assumption: "Sarah Chen will approve email-only as the MVP channel without requiring webhooks", confidence: "Medium", riskIfWrong: "Scope expands to webhook delivery in Sprint 1, making the 6-week deadline impossible" },
       { assumption: "$80k budget is sufficient for email-only MVP with Redis dedup and SendGrid", confidence: "High", riskIfWrong: "Budget overrun requires sponsor approval and may delay Sprint 2 start" },
     ],
     decisionsNeeded: [
-      { decision: "Lock MVP scope to email-only notifications - no webhooks in Sprint 1", owner: "Sarah Chen", by: "2026-06-10", impactIfDelayed: "Sprint 1 planning cannot be finalised; team risks building to the wrong scope" },
-      { decision: "Confirm Kafka consumer availability in production before Week 3 build", owner: "Marcus Reid (Tech Lead)", by: "2026-06-13", impactIfDelayed: "R2 becomes a live blocker; real-time delivery falls back to polling" },
+      { decision: "Lock MVP scope to email-only notifications - no webhooks in Sprint 1", owner: "Sarah Chen", by: "2026-06-10", impactIfDelayed: "Sprint 1 planning cannot be finalised, and the team risks building to the wrong scope" },
+      { decision: "Confirm Kafka consumer availability in production before Week 3 build", owner: "Marcus Reid (Tech Lead)", by: "2026-06-13", impactIfDelayed: "R2 becomes a live blocker, and real-time delivery falls back to polling" },
     ],
   }),
 
@@ -126,18 +126,18 @@ Enterprise clients discover payment failures reactively, causing churn and suppo
     `## Discovery Findings
 
 **The Real Problem**
-Enterprise clients have no proactive signal for payment failures; they learn from their own customers. The root need is a timely, configurable alert, not a dashboard.
+Enterprise clients have no proactive signal for payment failures, so they learn from their own customers. The root need is a timely, configurable alert, not a dashboard.
 
 **What Success Looks Like**
 Notification delivered within 60 seconds of a payment event, to the right account contacts.
 
 **Key Findings**
 - Kafka event layer already exists (reuse it)
-- MVP = email + in-app; in-app is a stretch
+- MVP = email plus in-app, and in-app is a stretch
 - Recipients configured at account level, not per user
 
 **Conflicts**
-- Sarah wants webhooks soon; engineering wants email-only for MVP
+- Sarah wants webhooks soon, and engineering wants email-only for MVP
 
 **Still Unknown**
 - Email delivery failure handling (retry vs alert)
@@ -148,10 +148,10 @@ Notification delivered within 60 seconds of a payment event, to the right accoun
 **Date:** 2026-06-01 | **Attendees:** Sarah Chen, Marcus Reid, Priya Sharma, PM
 
 **Summary**
-Kick-off for real-time notifications. MVP = email + in-app; Kafka event layer confirmed; the 6-week deadline covers email only, in-app is stretch.
+Kick-off for real-time notifications. MVP = email plus in-app, Kafka event layer confirmed, and the 6-week deadline covers email only, with in-app a stretch.
 
 **Decisions Made**
-- MVP = email only; in-app stretch
+- MVP = email only, in-app stretch
 - Recipients configurable at account level
 - Events: payment failed, retried, resolved
 - "Real-time" = within 60 seconds
@@ -312,7 +312,7 @@ SMS / push, webhook delivery, end-user notifications, custom templates.`),
         revisedPlan: "Webhook delivery moved into Sprint 2",
         reason: "Enterprise client request ahead of the Salesforce conference",
         changeProposedBy: "Sarah Chen",
-        deliveryImpact: "Sprint 2 capacity reduced; NOTIF-6 deferred to Sprint 3",
+        deliveryImpact: "Sprint 2 capacity reduced, and NOTIF-6 deferred to Sprint 3",
         technicalImpact: "New webhook service required in Sprint 2",
         productOwnerImpact: "Notification history de-prioritised to Sprint 3",
         costImpact: "Neutral - within $80k budget",

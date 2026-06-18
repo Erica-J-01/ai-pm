@@ -48,7 +48,10 @@ async function callClaude(
     body: JSON.stringify({
       model: MODEL,
       max_tokens: maxTokens,
-      system: systemPrompt,
+      // B2: the SKILL.md system prompt is large and identical across steps/runs.
+      // Mark it ephemeral so Anthropic caches it - paid in full once, then ~10%
+      // on every subsequent call that reuses the same prefix.
+      system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userContent }],
     }),
     ...(signal ? { signal } : {}),
@@ -146,7 +149,7 @@ export const claudeApi: OrchestratorApi = {
     return plan;
   },
 
-  async streamStep(planId, step, _onChunk, signal) {
+  async streamStep(planId, step, _onChunk, signal, context) {
     const apiKey = getClaudeApiKey();
     if (!apiKey) throw new Error("No Claude API key configured.");
 
@@ -158,7 +161,11 @@ export const claudeApi: OrchestratorApi = {
     const skillSystem = SKILL_PROMPTS[step.skill]
       ?? `You are a senior PM. Generate a structured ${step.skill} artefact from the input provided.`;
 
-    const markdown = await callClaude(apiKey, skillSystem, input, 4096, signal);
+    // B1: append the upstream chain context (dependencies' artefacts) so this
+    // step derives from them, not just from the original brief.
+    const userContent = context?.trim() ? `${input}\n\n---\n\n${context}` : input;
+
+    const markdown = await callClaude(apiKey, skillSystem, userContent, 4096, signal);
 
     const now = new Date().toISOString();
     return {
@@ -172,3 +179,65 @@ export const claudeApi: OrchestratorApi = {
     } as SkillExecution;
   },
 };
+
+/**
+ * Intake signal detection: given the project input and the conditional intake
+ * questions (each with its trigger condition), ask Claude which ones apply, so
+ * the interview shows only the relevant questions. Falls back to "show all" on
+ * no key, no candidates, or any error - detection should never hide a question
+ * by mistake.
+ */
+export async function detectIntakeSignals(
+  input: string,
+  candidates: { id: string; condition: string }[],
+): Promise<string[]> {
+  const apiKey = getClaudeApiKey();
+  if (!apiKey || candidates.length === 0) return candidates.map((c) => c.id);
+  const system =
+    "You decide which conditional intake questions apply to a project input. " +
+    "You are given the input and a list of questions, each with an id and a trigger condition. " +
+    "Return ONLY a JSON array of the ids whose condition is satisfied by the input. No prose, no code fence.";
+  const user =
+    `INPUT:\n${input}\n\nQUESTIONS:\n` +
+    candidates.map((c) => `- ${c.id}: ${c.condition}`).join("\n") +
+    `\n\nReturn the JSON array of applicable ids (a subset of: ${candidates.map((c) => c.id).join(", ")}).`;
+  try {
+    const raw = await callClaude(apiKey, system, user, 256);
+    const clean = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    const ids = JSON.parse(clean) as unknown;
+    if (!Array.isArray(ids)) return candidates.map((c) => c.id);
+    const valid = new Set(candidates.map((c) => c.id));
+    return ids.filter((x): x is string => typeof x === "string" && valid.has(x));
+  } catch {
+    return candidates.map((c) => c.id); // never hide questions on a detection failure
+  }
+}
+
+/**
+ * B3 edit-cascade: regenerate ONE skill live, deriving from supplied upstream
+ * context. Runs outside a plan, so the caller passes the original brief and the
+ * chained context built from the current (edited) upstream artefacts.
+ */
+export async function regenerateSkillLive(
+  skill: SkillId,
+  input: string,
+  context: string,
+  signal?: AbortSignal,
+): Promise<SkillExecution> {
+  const apiKey = getClaudeApiKey();
+  if (!apiKey) throw new Error("No Claude API key configured.");
+  const skillSystem = SKILL_PROMPTS[skill]
+    ?? `You are a senior PM. Generate a structured ${skill} artefact from the input provided.`;
+  const userContent = context.trim() ? `${input}\n\n---\n\n${context}` : input;
+  const markdown = await callClaude(apiKey, skillSystem, userContent, 4096, signal);
+  const now = new Date().toISOString();
+  return {
+    id: `exec-regen-${skill}-${now}`,
+    request: { skill, clientId: "", projectId: "", input },
+    status: "complete",
+    markdown,
+    payload: adaptArtifact(skill, markdown),
+    startedAt: now,
+    completedAt: now,
+  } as SkillExecution;
+}

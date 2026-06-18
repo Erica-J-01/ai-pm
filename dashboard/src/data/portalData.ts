@@ -8,7 +8,7 @@ import type { OnbData } from "@/components/onboarding/steps";
  */
 export const PORTAL_DATA: OnbData = {
   triage: {
-    requestSummary: "Finwave's enterprise clients have no self-service portal; they email account managers for statements, user changes, and payment history. The team wants a customer portal to cut that load.",
+    requestSummary: "Finwave's enterprise clients have no self-service portal, so they email account managers for statements, user changes, and payment history. The team wants a customer portal to cut that load.",
     businessGoal: "Reduce account-management workload and improve client satisfaction by letting clients self-serve common account tasks.",
     stakeholderNeed: "Enterprise client admins need to view statements, manage their users, and see payment history without contacting Finwave.",
     whatIsClear: [
@@ -75,7 +75,7 @@ export const PORTAL_DATA: OnbData = {
       { finding: "SSO is a hard requirement for the two largest clients", confidence: "Medium" },
       { finding: "Statements are the most-requested item", confidence: "High" },
     ],
-    conflicts: [{ conflict: "Security wants SSO at launch; delivery wants it in phase 2" }],
+    conflicts: [{ conflict: "Security wants SSO at launch, and delivery wants it in phase 2" }],
     unknowns: [
       { unknown: "Role model inside a client account", resolve: "Workshop with two pilot clients" },
       { unknown: "Statement export format (PDF vs CSV)", resolve: "Confirm with Client Success" },

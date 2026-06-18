@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Moon, Plus, Sun, X } from "lucide-react";
+import { Moon, Plus, Settings, Sun, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   type ClientContext,
@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /**
  * DashboardLayout - the 3-column workspace shell.
@@ -43,11 +44,19 @@ export interface DashboardLayoutProps {
   onAddProject?: (name: string) => void;
   /** Add a client inline (name only). */
   onAddClient?: (name: string) => void;
+  /** Delete the given project. */
+  onDeleteProject?: (projectId: string) => void;
+  /** Delete the given client (and its projects). */
+  onDeleteClient?: (clientId: string) => void;
   onManageConnectors?: () => void;
   /** Reveal the skill nav once the project's first orchestration has finished. */
   skillsUnlocked?: boolean;
   /** Per-skill orchestration outcome for the active project (nav indicators). */
   skillStatus?: Partial<Record<SkillId, "approved" | "skipped">>;
+  /** Skills already generated for the active project (others stay greyed/locked). */
+  generatedSkills?: SkillId[];
+  /** Generated/changed skills this user has not yet viewed (green "unseen" dot). */
+  unseenSkills?: SkillId[];
   /** Center column - the OrchestratorConsole / skill form. */
   console: ReactNode;
   /** Right column - the ArtifactViewer. */
@@ -57,13 +66,24 @@ export interface DashboardLayoutProps {
 export function DashboardLayout({
   clients, projects, connectors,
   activeClientId, activeProjectId, activeSkill, skillIndex,
-  onClientChange, onProjectChange, onSelectSkill, onAddProject, onAddClient, onManageConnectors,
-  skillsUnlocked, skillStatus, console: consoleSlot, canvas,
+  onClientChange, onProjectChange, onSelectSkill, onAddProject, onAddClient, onDeleteProject, onDeleteClient, onManageConnectors,
+  skillsUnlocked, skillStatus, generatedSkills, unseenSkills, console: consoleSlot, canvas,
 }: DashboardLayoutProps) {
   const projectsForClient = useMemo(
     () => projects.filter((p) => p.clientId === activeClientId),
     [projects, activeClientId],
   );
+  // Pending delete confirmation (project or client). Client delete also requires
+  // typing the client name to confirm (matched against confirmText).
+  const [confirmDelete, setConfirmDelete] = useState<{ kind: "project" | "client"; id: string; name: string } | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const activeClientName = clients.find((c) => c.id === activeClientId)?.name ?? "";
+  const activeProjectName = projects.find((p) => p.id === activeProjectId)?.name ?? "";
+
+  // Orchestration is "complete" once every approved chain step has been generated.
+  // Standalone skills unlock at that point; while it is still in progress they stay locked.
+  const approvedChain = Object.entries(skillStatus ?? {}).filter(([, s]) => s === "approved").map(([id]) => id);
+  const orchestrationComplete = approvedChain.length > 0 && approvedChain.every((id) => (generatedSkills ?? []).includes(id as SkillId));
 
   // Inline add - translucent fields instead of dialogs. Any non-empty name is allowed.
   const [addingClient, setAddingClient] = useState(false);
@@ -92,6 +112,64 @@ export function DashboardLayout({
 
   return (
     <div className="grid h-dvh grid-cols-[280px_minmax(440px,1fr)_minmax(420px,640px)] bg-background text-foreground">
+      {/* Delete confirmation (project or client) */}
+      <Dialog open={!!confirmDelete} onOpenChange={(o) => { if (!o) { setConfirmDelete(null); setConfirmText(""); } }}>
+        <DialogContent>
+          {(() => {
+            const isClient = confirmDelete?.kind === "client";
+            const clientProjects = isClient && confirmDelete ? projects.filter((p) => p.clientId === confirmDelete.id) : [];
+            const nameMatches = !isClient || confirmText.trim() === confirmDelete?.name;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Delete {isClient ? "client" : "project"}?</DialogTitle>
+                  <DialogDescription>
+                    {isClient ? (
+                      clientProjects.length > 0
+                        ? `Deleting "${confirmDelete?.name}" also permanently deletes all ${clientProjects.length} of its projects (${clientProjects.map((p) => p.name).join(", ")}) and everything in them. This cannot be undone.`
+                        : `This permanently deletes the client "${confirmDelete?.name}". This cannot be undone.`
+                    ) : (
+                      `This permanently removes the project "${confirmDelete?.name}". This cannot be undone.`
+                    )}
+                  </DialogDescription>
+                </DialogHeader>
+
+                {isClient && (
+                  <div className="mt-3 space-y-1.5">
+                    <label className="text-xs text-muted-foreground">
+                      Type <span className="font-medium text-foreground">{confirmDelete?.name}</span> to confirm
+                    </label>
+                    <Input
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value)}
+                      placeholder={confirmDelete?.name}
+                      autoFocus
+                    />
+                  </div>
+                )}
+
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => { setConfirmDelete(null); setConfirmText(""); }}>Cancel</Button>
+                  <Button
+                    size="sm"
+                    className="bg-status-danger text-white hover:bg-status-danger/90"
+                    disabled={!nameMatches}
+                    onClick={() => {
+                      if (confirmDelete?.kind === "project") onDeleteProject?.(confirmDelete.id);
+                      else if (confirmDelete?.kind === "client") onDeleteClient?.(confirmDelete.id);
+                      setConfirmDelete(null);
+                      setConfirmText("");
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* ---------------- LEFT: Navigation & Context ---------------- */}
       <aside className="flex min-h-0 flex-col border-r border-border bg-surface">
         <BrandHeader />
@@ -103,6 +181,17 @@ export function DashboardLayout({
             placeholder="Select client"
             options={clients.map((c) => ({ value: c.id, label: c.name }))}
             onChange={onClientChange}
+            action={activeClientId && (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete({ kind: "client", id: activeClientId, name: activeClientName })}
+                title="Delete client"
+                aria-label="Delete client"
+                className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-status-danger"
+              >
+                <Trash2 className="h-3 w-3" /> Delete
+              </button>
+            )}
           />
 
           {/* Inline client add - translucent box, right above the Project section */}
@@ -123,6 +212,17 @@ export function DashboardLayout({
             disabled={!activeClientId || noProjects}
             options={projectsForClient.map((p) => ({ value: p.id, label: p.name }))}
             onChange={onProjectChange}
+            action={activeProjectId && (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete({ kind: "project", id: activeProjectId, name: activeProjectName })}
+                title="Delete project"
+                aria-label="Delete project"
+                className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-status-danger"
+              >
+                <Trash2 className="h-3 w-3" /> Delete
+              </button>
+            )}
           />
 
           {/* Inline project add - translucent box */}
@@ -183,20 +283,35 @@ export function DashboardLayout({
                     const meta = skillIndex[id];
                     const active = id === activeSkill;
                     const status = skillStatus?.[id];
+                    const generated = !!generatedSkills && generatedSkills.includes(id);
+                    const isChain = status === "approved" || status === "skipped";
                     const skipped = status === "skipped";
+                    // Approved chain step awaiting generation.
+                    const pending = status === "approved" && !generated;
+                    // Chain steps: open only once generated (skipped/pending stay locked).
+                    // Standalone skills: locked while orchestration is in progress, unlocked once complete.
+                    const locked = isChain ? !generated : !orchestrationComplete;
                     return (
                       <li key={id}>
                         <button
                           type="button"
-                          onClick={() => onSelectSkill(id)}
+                          onClick={() => { if (!locked) onSelectSkill(id); }}
+                          disabled={locked}
                           aria-current={active ? "page" : undefined}
-                          title={skipped ? "Skipped - empty. Open to add this section." : undefined}
+                          title={
+                            skipped ? "Skipped during orchestration - locked."
+                            : pending ? "Not generated yet - generate it from the orchestration plan first."
+                            : locked ? "Available once orchestration is complete."
+                            : undefined
+                          }
                           className={cn(
                             "group relative flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
                             active
                               ? "bg-primary text-primary-foreground"
-                              : "text-foreground/80 hover:bg-muted",
-                            skipped && !active && "opacity-55",
+                              : locked
+                                ? "text-foreground/80"
+                                : "text-foreground/80 hover:bg-muted",
+                            locked && !active && "opacity-45 cursor-not-allowed",
                           )}
                         >
                           {active && (
@@ -215,8 +330,16 @@ export function DashboardLayout({
                               Skipped
                             </span>
                           )}
-                          {status === "approved" && !active && (
-                            <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-status-success" aria-hidden />
+                          {pending && (
+                            <span className={cn(
+                              "ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+                              "bg-muted text-muted-foreground",
+                            )}>
+                              Pending
+                            </span>
+                          )}
+                          {generated && !active && unseenSkills?.includes(id) && (
+                            <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-status-success" aria-hidden title="New since you last viewed" />
                           )}
                         </button>
                       </li>
@@ -337,7 +460,7 @@ function ColumnHeader({ title, subtitle }: { title: string; subtitle: string }) 
 }
 
 function ContextSelect({
-  label, value, placeholder, options, disabled, onChange,
+  label, value, placeholder, options, disabled, onChange, action,
 }: {
   label: string;
   value?: string;
@@ -345,10 +468,15 @@ function ContextSelect({
   disabled?: boolean;
   options: { value: string; label: string }[];
   onChange: (v: string) => void;
+  /** Optional control rendered at the right of the label row (e.g. a delete button). */
+  action?: ReactNode;
 }) {
   return (
-    <label className="block space-y-1">
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+    <div className="space-y-1">
+      <div className="flex h-4 items-center justify-between">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+        {action}
+      </div>
       <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger className="h-9 w-full rounded-md border-border bg-card text-sm">
           <SelectValue placeholder={placeholder} />
@@ -359,53 +487,24 @@ function ContextSelect({
           ))}
         </SelectContent>
       </Select>
-    </label>
+    </div>
   );
 }
-
-const STATUS_DOT: Record<McpConnector["status"], string> = {
-  connected: "bg-status-success",
-  disconnected: "bg-status-na",
-  error: "bg-status-danger",
-  checking: "bg-status-warning animate-pulse",
-};
 
 function ConnectorStatusBar({ connectors, onManage }: { connectors: McpConnector[]; onManage?: () => void }) {
   const connectedCount = connectors.filter((c) => c.status === "connected").length;
   return (
     <div className="px-4 py-3">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Connected Tools
+          Connected Tools <span className="tabular-nums text-foreground/70">{connectedCount}/{connectors.length}</span>
         </p>
-        <span className="flex items-center gap-2 text-[11px] tabular-nums text-muted-foreground">
-          {connectedCount}/{connectors.length}
-          {onManage && (
-            <button
-              type="button"
-              onClick={onManage}
-              className="rounded px-1.5 py-0.5 font-medium text-foreground hover:bg-muted"
-            >
-              Manage
-            </button>
-          )}
-        </span>
+        {onManage && (
+          <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-[11px]" onClick={onManage}>
+            <Settings className="h-3.5 w-3.5" /> Manage
+          </Button>
+        )}
       </div>
-      <ul className="flex flex-wrap gap-1.5">
-        {connectors.map((c) => (
-          <li
-            key={c.id}
-            title={`${c.label}: ${c.status}${c.detail ? ` - ${c.detail}` : ""}`}
-            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-1 text-[11px]"
-          >
-            <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_DOT[c.status])} />
-            {c.label}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
-        Not connected? Skills fall back to paste-in &amp; copy-ready output.
-      </p>
     </div>
   );
 }

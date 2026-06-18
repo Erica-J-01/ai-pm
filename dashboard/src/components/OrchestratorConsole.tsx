@@ -12,6 +12,11 @@ import {
 } from "@/types/pm";
 import { type OrchestratorApi } from "@/api/orchestrator";
 import { getClaudeApiKey } from "@/api";
+import { detectIntakeSignals } from "@/api/claudeOrchestrator";
+import { buildChainContext, intakeAnswersContext } from "@/api/artifactDigest";
+import { INTAKE_QUESTIONS, type IntakeQuestion } from "@/api/intakeQuestions";
+import { IntakeInterview } from "@/components/IntakeInterview";
+import { downstreamOf } from "@/data/skillChain";
 import { skillTitle } from "@/data/demo";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,6 +45,20 @@ export interface OrchestratorConsoleProps {
   ) => void;
   /** Records whether the risk-scan visualisation/dashboard should be generated. */
   onVizDecision?: (approved: boolean) => void;
+  /** Generate one step (next ungenerated), deriving from the current upstream artefacts. */
+  onGenerateStep?: (skill: SkillId) => Promise<void>;
+  /** Finish a step-by-step run: record skip decisions without regenerating. */
+  onFinalizeStepwise?: (decisions: Record<SkillId, Decision>) => void;
+  /** Skills already generated for this project (drives the per-step status). */
+  generatedSkills?: SkillId[];
+  /** A generated skill's intake answers changed - mark it and its downstream stale. */
+  onIntakeChanged?: (skill: SkillId, affected: SkillId[]) => void;
+  /** Persist intake answers as they are entered (so regeneration re-reads them). */
+  onIntakeAnswersChange?: (skill: SkillId, answers: Record<string, string>) => void;
+  /** Stored intake answers for this project, used to seed the console on load. */
+  intakeAnswersSeed?: Partial<Record<SkillId, Record<string, string>>>;
+  /** Persist the brief that produced the plan (enables later live regeneration). */
+  onRunInput?: (input: string) => void;
   orchestrated?: boolean;
   defaultInput?: string;
 }
@@ -89,7 +108,7 @@ async function extractPdfText(file: File): Promise<string> {
 /* ─── component ──────────────────────────────────────────────────────── */
 
 export function OrchestratorConsole({
-  clientId, projectId, api, onViewSkill, onComplete, onVizDecision, orchestrated, defaultInput = "",
+  clientId, projectId, api, onViewSkill, onComplete, onVizDecision, onGenerateStep, onFinalizeStepwise, generatedSkills = [], onIntakeChanged, onIntakeAnswersChange, intakeAnswersSeed, onRunInput, orchestrated, defaultInput = "",
 }: OrchestratorConsoleProps) {
   const [input, setInput] = useState(defaultInput);
   const [dragging, setDragging] = useState(false);
@@ -103,6 +122,22 @@ export function OrchestratorConsole({
   const [stubPrompt, setStubPrompt] = useState(false);
   const [vizApproved, setVizApproved] = useState(true); // risk-scan dashboard sub-step
   const [completionError, setCompletionError] = useState<string | null>(null);
+  // Step-by-step run: index of the next approved step to generate (null = not stepping).
+  const [stepIdx, setStepIdx] = useState<number | null>(null);
+  // Intake interview answers per skill, and which skill's interview is open (null = none).
+  const [intakeAnswers, setIntakeAnswers] = useState<Partial<Record<SkillId, Record<string, string>>>>({});
+  const [intakeOpenFor, setIntakeOpenFor] = useState<SkillId | null>(null);
+  // Answers snapshot per skill at generation time, to detect post-run edits.
+  const genAnswersRef = useRef<Partial<Record<SkillId, string>>>({});
+  // Pending cascade warning when a generated skill's answers changed.
+  const [intakeWarn, setIntakeWarn] = useState<{ skill: SkillId; affected: SkillId[] } | null>(null);
+  // Conditional question ids detected as applicable per skill (live signal detection).
+  const [detectedFor, setDetectedFor] = useState<Partial<Record<SkillId, string[]>>>({});
+  const [detecting, setDetecting] = useState<SkillId | null>(null);
+  // Skills flagged red because a run was attempted with their intake unanswered.
+  const [highlightMissing, setHighlightMissing] = useState<SkillId[]>([]);
+  // Artefacts generated so far this run, for chaining context across steps.
+  const execAccRef = useRef<Partial<Record<SkillId, SkillExecution>>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // When the active project changes, reset ALL per-project state so a new
@@ -116,8 +151,48 @@ export function OrchestratorConsole({
     setInput(defaultInput); // pre-fill the demo input where one is provided
     setAttachments([]);
     setVizApproved(true);
+    setStepIdx(null);
+    setIntakeAnswers(intakeAnswersSeed ?? {}); // seed from the store so answers survive project switches
+    setIntakeOpenFor(null);
+    setIntakeWarn(null);
+    setDetectedFor({});
+    setDetecting(null);
+    setHighlightMissing([]);
+    genAnswersRef.current = {};
+    execAccRef.current = {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  // On opening an intake, ask Claude which conditional questions apply (live only).
+  // Stub / no key / failure falls back to showing all (detectedFor stays unset).
+  useEffect(() => {
+    const skill = intakeOpenFor;
+    if (!skill || detectedFor[skill] || !getClaudeApiKey()) return;
+    const conditionals = (INTAKE_QUESTIONS[skill] ?? []).filter((q) => q.conditional);
+    if (conditionals.length === 0) { setDetectedFor((m) => ({ ...m, [skill]: [] })); return; }
+    let cancelled = false;
+    setDetecting(skill);
+    detectIntakeSignals(input, conditionals.map((q) => ({ id: q.id, condition: q.condition })))
+      .then((ids) => { if (!cancelled) setDetectedFor((m) => ({ ...m, [skill]: ids })); })
+      .finally(() => { if (!cancelled) setDetecting(null); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intakeOpenFor]);
+
+  // Clear the "answer the required intake" warning + red flags as soon as the
+  // required questions are answered.
+  useEffect(() => {
+    if (!plan) return;
+    const gateOk = (skill: SkillId) =>
+      (INTAKE_QUESTIONS[skill] ?? []).filter((q) => q.gate).every((q) => (intakeAnswers[skill] ?? {})[q.id]?.trim());
+    setHighlightMissing((m) => m.filter((s) => !gateOk(s)));
+    const allReady = plan.steps
+      .filter((s) => s.state !== "skipped")
+      .every((s) => (INTAKE_QUESTIONS[s.skill]?.length ?? 0) === 0 || gateOk(s.skill));
+    if (allReady) {
+      setCompletionError((e) => (e && e.startsWith("Answer the required intake") ? null : e));
+    }
+  }, [intakeAnswers, plan]);
 
   const canRun = Boolean(input.trim() && clientId && projectId);
   const showHub = !!orchestrated && !plan && !rerun;
@@ -181,6 +256,13 @@ export function OrchestratorConsole({
       });
       setCompleted(false);
       setCompletionError(null);
+      setStepIdx(null);
+      setIntakeOpenFor(null);
+      setDetectedFor({}); // re-detect signals against the new input
+      setDetecting(null);
+      setHighlightMissing([]);
+      execAccRef.current = {};
+      onRunInput?.(input.trim()); // persist the brief for later regeneration
     },
   });
 
@@ -210,24 +292,82 @@ export function OrchestratorConsole({
     setStubPrompt(false);
     recordViz();
     onComplete?.(decisionsFor()); // no Claude executions -> buildExecution/TEST_DATA path
+    approvedSteps().forEach((s) => snapshotIntake(s.skill));
     setCompleted(true);
   };
 
-  /** Live completion: run Claude for each approved step. */
+  const approvedSteps = (): PlanStep[] => (plan ? plan.steps.filter((s) => s.state !== "skipped") : []);
+
+  /* ── intake interview (A) ── */
+  const hasIntake = (skill: SkillId) => (INTAKE_QUESTIONS[skill]?.length ?? 0) > 0;
+  /** Questions to actually ask: always-questions, plus conditionals whose signal was detected. */
+  const questionsFor = (skill: SkillId): IntakeQuestion[] => {
+    const all = INTAKE_QUESTIONS[skill] ?? [];
+    const detected = detectedFor[skill];
+    if (!detected) return all; // not yet detected (stub / no key / pending) -> show all
+    return all.filter((q) => !q.conditional || detected.includes(q.id));
+  };
+  const gateAnswered = (skill: SkillId) => {
+    const ans = intakeAnswers[skill] ?? {};
+    return (INTAKE_QUESTIONS[skill] ?? []).filter((q) => q.gate).every((q) => ans[q.id]?.trim());
+  };
+  /** Every approved step that has an intake must have its gate question answered. */
+  const intakeReady = () => approvedSteps().every((s) => !hasIntake(s.skill) || gateAnswered(s.skill));
+
+  /** Intake answers for a skill, serialised as context for its generation. */
+  const intakeContext = (skill: SkillId): string => intakeAnswersContext(skill, intakeAnswers[skill]);
+
+  /** Full per-step context: intake answers + chained upstream artefacts. */
+  const contextFor = (skill: SkillId): string =>
+    [intakeContext(skill), buildChainContext(skill, execAccRef.current)].filter(Boolean).join("\n\n---\n\n");
+
+  /** Record the answers a skill was generated with, to detect later edits. */
+  const snapshotIntake = (skill: SkillId) => {
+    if (INTAKE_QUESTIONS[skill]) genAnswersRef.current[skill] = JSON.stringify(intakeAnswers[skill] ?? {});
+  };
+
+  /**
+   * Close the intake panel. If a generated skill's answers changed, warn that
+   * the affected steps (this skill plus everything downstream) must re-run.
+   */
+  const closeIntake = () => {
+    const skill = intakeOpenFor;
+    // The change-cascade only applies while still orchestrating. Once complete,
+    // artefacts are independent living documents - editing answers never cascades.
+    if (!completed && skill && generatedSkills.includes(skill) && genAnswersRef.current[skill] !== undefined) {
+      const changed = genAnswersRef.current[skill] !== JSON.stringify(intakeAnswers[skill] ?? {});
+      if (changed) {
+        const affected = [skill, ...downstreamOf(skill)].filter((s) => generatedSkills.includes(s));
+        if (affected.length) { setIntakeWarn({ skill, affected }); return; }
+      }
+    }
+    setIntakeOpenFor(null);
+  };
+
+  /** Confirm the cascade: mark the affected steps stale, then close. */
+  const confirmIntakeChange = () => {
+    if (intakeWarn) {
+      onIntakeChanged?.(intakeWarn.skill, intakeWarn.affected);
+      snapshotIntake(intakeWarn.skill);
+    }
+    setIntakeWarn(null);
+    setIntakeOpenFor(null);
+  };
+
+  /** Run all approved steps in chain order; each step derives from prior outputs. */
   const runLive = async () => {
     if (!plan) return;
     setCompleting(true);
     setCompletionError(null);
+    execAccRef.current = {};
 
-    const approvedSteps = plan.steps.filter((s) => s.state !== "skipped");
-    const claudeExecutions: Partial<Record<SkillId, SkillExecution>> = {};
-
-    for (const step of approvedSteps) {
+    for (const step of approvedSteps()) {
       setCompletingStep(skillTitle(step.skill));
       const ctrl = new AbortController();
       try {
-        const execution = await api.streamStep(plan.id, step, () => {}, ctrl.signal);
-        claudeExecutions[step.skill] = execution;
+        const execution = await api.streamStep(plan.id, step, () => {}, ctrl.signal, contextFor(step.skill));
+        execAccRef.current[step.skill] = execution;
+        snapshotIntake(step.skill);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (!completionError) setCompletionError(msg);
@@ -236,16 +376,80 @@ export function OrchestratorConsole({
 
     setCompletingStep(null);
     recordViz();
-    onComplete?.(decisionsFor(), Object.keys(claudeExecutions).length > 0 ? claudeExecutions : undefined);
+    const acc = execAccRef.current;
+    onComplete?.(decisionsFor(), Object.keys(acc).length > 0 ? acc : undefined);
     setCompleting(false);
     setCompleted(true);
   };
 
-  /** Entry point: live if a Claude key exists, otherwise offer stub mode. */
-  const complete = async () => {
-    if (!plan) return;
+  /**
+   * Block a run until every approved intake step has its gate question answered.
+   * Does NOT open the interview - it flags the missing step(s) red, scrolls to
+   * the first one, and shows a warning, so the user sees where input is needed.
+   */
+  const blockedByIntake = (): boolean => {
+    if (intakeReady()) return false;
+    const missing = approvedSteps().filter((s) => hasIntake(s.skill) && !gateAnswered(s.skill)).map((s) => s.skill);
+    setHighlightMissing(missing);
+    setCompletionError("Answer the required intake question first - see the highlighted step below.");
+    if (missing[0]) {
+      requestAnimationFrame(() => {
+        document.getElementById(`intake-row-${missing[0]}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+    return true;
+  };
+
+  /** Run all: live if a Claude key exists, otherwise offer stub mode. */
+  const runAll = async () => {
+    if (!plan || blockedByIntake()) return;
     if (!getClaudeApiKey()) { setStubPrompt(true); return; }
     await runLive();
+  };
+
+  /** Begin step-by-step. Commits the plan (so the nav/cards reflect it); each step is generated on demand. */
+  const startStepwise = () => {
+    if (!plan) return;
+    setCompletionError(null);
+    onFinalizeStepwise?.(decisionsFor()); // commit decisions so pending + skipped lock in the nav
+    setStepIdx(0); // stepping flag (the active step is always the next ungenerated one)
+  };
+
+  /**
+   * Generate one step (the next ungenerated). Gated per-step on that step's own
+   * intake. Routed through the store so it derives from the CURRENT upstream
+   * artefacts - correct both for first generation and after an upstream edit.
+   */
+  const requestGenerate = async (skill: SkillId) => {
+    if (!plan) return;
+    if (hasIntake(skill) && !gateAnswered(skill)) {
+      setHighlightMissing([skill]);
+      setCompletionError("Answer the required intake question first - see the highlighted step below.");
+      requestAnimationFrame(() => {
+        document.getElementById(`intake-row-${skill}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
+    setCompleting(true);
+    setCompletingStep(skillTitle(skill));
+    try { await onGenerateStep?.(skill); }
+    catch (e) { setCompletionError(e instanceof Error ? e.message : String(e)); }
+    setCompleting(false);
+    setCompletingStep(null);
+    snapshotIntake(skill);
+  };
+
+  /** Finish the step-by-step run. */
+  const finishStepwise = () => {
+    recordViz();
+    onFinalizeStepwise?.(decisionsFor());
+    setStepIdx(null);
+    setCompleted(true);
+  };
+
+  const cancelStepwise = () => {
+    setStepIdx(null);
+    setCompletionError(null);
   };
 
   const reset = () => {
@@ -255,10 +459,24 @@ export function OrchestratorConsole({
     setAttachments([]);
     setCompleted(false);
     setCompletionError(null);
+    setStepIdx(null);
+    setIntakeAnswers({});
+    setIntakeOpenFor(null);
+    setDetectedFor({});
+    setDetecting(null);
+    setHighlightMissing([]);
+    execAccRef.current = {};
   };
 
   const approvedCount = plan ? plan.steps.filter((s) => s.state !== "skipped").length : 0;
   const skippedCount = plan ? plan.steps.length - approvedCount : 0;
+  // Step-by-step view state
+  const stepList = approvedSteps();
+  // The active step is always the first approved step not yet generated. This
+  // self-corrects after an upstream edit resets downstream steps.
+  const decidePhase = stepIdx === null && !completed;
+  const nextUngenerated = !decidePhase ? (stepList.find((s) => !generatedSkills.includes(s.skill)) ?? null) : null;
+  const stepDone = stepIdx !== null && !nextUngenerated;
 
   if (showHub) return <OrchestratedHub onRerun={() => setRerun(true)} />;
 
@@ -276,6 +494,24 @@ export function OrchestratorConsole({
           <div className="mt-4 flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setStubPrompt(false)}>Cancel</Button>
             <Button size="sm" onClick={finishWithStub}>Continue with stub data</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Changed-answer cascade warning */}
+      <Dialog open={!!intakeWarn} onOpenChange={(o) => { if (!o) { setIntakeWarn(null); setIntakeOpenFor(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Re-run affected steps?</DialogTitle>
+            <DialogDescription>
+              {intakeWarn
+                ? `This will re-run the orchestrator from these steps: ${intakeWarn.affected.map((s) => skillTitle(s)).join(", ")} - due to your changed answer.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => { setIntakeWarn(null); setIntakeOpenFor(null); }}>Keep as is</Button>
+            <Button size="sm" onClick={confirmIntakeChange}>Re-run those steps</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -341,13 +577,13 @@ export function OrchestratorConsole({
               Attach PDF
             </button>
             <span className="text-xs text-muted-foreground">
-              {clientId && projectId ? "Orchestrator will plan the right skills." : "Select a client & project first."}
+              {clientId && projectId ? "Proposes which steps to run - you approve or skip each." : "Select a client & project first."}
             </span>
           </div>
           <div className="flex gap-2">
-            {plan && <Button variant="ghost" size="sm" onClick={reset}>Reset</Button>}
+            {plan && !completed && <Button variant="ghost" size="sm" onClick={reset}>Reset</Button>}
             <Button size="sm" disabled={!canRun || planMutation.isPending || extracting} onClick={() => planMutation.mutate()}>
-              {planMutation.isPending ? "Planning…" : "Run orchestrator"}
+              {planMutation.isPending ? "Planning…" : "Plan steps"}
             </Button>
           </div>
         </div>
@@ -359,8 +595,29 @@ export function OrchestratorConsole({
         <ErrorCard message={(planMutation.error as Error).message} onRetry={() => planMutation.mutate()} />
       )}
 
+      {/* ── Intake interview (replaces the plan while open) ── */}
+      {intakeOpenFor && (
+        detecting === intakeOpenFor ? (
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-card">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-status-info" aria-hidden />
+            Working out which questions apply to your input…
+          </div>
+        ) : (
+          <IntakeInterview
+            skill={intakeOpenFor}
+            questions={questionsFor(intakeOpenFor)}
+            answers={intakeAnswers[intakeOpenFor] ?? {}}
+            onChange={(a) => {
+              setIntakeAnswers((m) => ({ ...m, [intakeOpenFor]: a }));
+              onIntakeAnswersChange?.(intakeOpenFor, a); // persist to the store for regeneration
+            }}
+            onClose={closeIntake}
+          />
+        )
+      )}
+
       {/* ── Step-by-step plan ── */}
-      {plan && (
+      {plan && !intakeOpenFor && (
         <div key={plan.id} className="rounded-xl border border-border bg-card p-4 shadow-card">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold">Orchestration Plan</h3>
@@ -368,14 +625,14 @@ export function OrchestratorConsole({
           </div>
           <p className="mb-4 text-sm text-muted-foreground">{plan.summary}</p>
 
-          <ol className="relative space-y-2 pl-6">
-            <span className="absolute left-[9px] top-1 bottom-1 w-px bg-border" aria-hidden />
+          <ol className={cn("relative space-y-2", stepIdx !== null && "pl-6")}>
+            {/* Timeline rail + dots only guide the step-by-step run, not the decide/run-all/done views */}
+            {stepIdx !== null && <span className="absolute left-[9px] top-1 bottom-1 w-px bg-border" aria-hidden />}
             {/* initial enabled so the staggered list animates in when the plan first appears, not only on re-key */}
             <AnimatePresence>
               {plan.steps.map((step, i) => (
                 <motion.li
                   key={step.id}
-                  layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
@@ -384,10 +641,14 @@ export function OrchestratorConsole({
                   <StepCard
                     step={step}
                     index={i}
-                    completed={completed}
+                    decidePhase={decidePhase}
+                    stepping={stepIdx !== null}
+                    generated={generatedSkills.includes(step.skill)}
+                    isNext={!decidePhase && nextUngenerated?.skill === step.skill}
                     completing={completing && completingStep === skillTitle(step.skill)}
                     onApprove={() => setDecision(step, "approved")}
                     onSkip={() => setDecision(step, "skipped")}
+                    onGenerate={() => { if (step.state === "skipped") setDecision(step, "approved"); requestGenerate(step.skill); }}
                     onView={() => onViewSkill?.(step.skill)}
                   />
 
@@ -419,6 +680,53 @@ export function OrchestratorConsole({
                       )}
                     </AnimatePresence>
                   )}
+
+                  {/* Intake interview: required before generating, and editable after (with a cascade warning) */}
+                  {hasIntake(step.skill) && (
+                    <AnimatePresence initial={false}>
+                      {step.state !== "skipped" && (() => {
+                        const qs = questionsFor(step.skill);
+                        const ans = intakeAnswers[step.skill] ?? {};
+                        const answeredN = qs.filter((q) => ans[q.id]?.trim()).length;
+                        const ready = gateAnswered(step.skill);
+                        return (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="ml-3 mt-1.5 overflow-hidden"
+                          >
+                            <div
+                              id={`intake-row-${step.skill}`}
+                              className={cn(
+                                "rounded-lg border border-dashed bg-muted/30 p-2.5",
+                                highlightMissing.includes(step.skill) && !ready
+                                  ? "border-status-danger"
+                                  : ready ? "border-border" : "border-status-warning/50",
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-foreground/80">
+                                    ↳ Intake interview {!ready && <span className={highlightMissing.includes(step.skill) ? "text-status-danger" : "text-status-warning"}>*</span>}
+                                  </p>
+                                  <p className={cn(
+                                    "text-[11px]",
+                                    highlightMissing.includes(step.skill) && !ready ? "text-status-danger" : "text-muted-foreground",
+                                  )}>
+                                    {answeredN}/{qs.length} answered. {ready ? "Ready to generate." : "Answer the required question before generating."}
+                                  </p>
+                                </div>
+                                <Button size="sm" variant="outline" className="shrink-0" onClick={() => { setHighlightMissing((m) => m.filter((s) => s !== step.skill)); setIntakeOpenFor(step.skill); }}>
+                                  {answeredN > 0 ? "Review answers" : "Answer questions"}
+                                </Button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })()}
+                    </AnimatePresence>
+                  )}
                 </motion.li>
               ))}
             </AnimatePresence>
@@ -426,21 +734,69 @@ export function OrchestratorConsole({
 
           {/* ── Footer ── */}
           {!completed ? (
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3">
-              <p className="text-xs text-muted-foreground">
-                {completing
-                  ? completingStep ? `Generating ${completingStep}…` : "Finishing up…"
-                  : `${approvedCount} approved, ${skippedCount} skipped.`}
-              </p>
-              <Button size="sm" onClick={complete} disabled={completing || approvedCount === 0}>
-                {completing ? "Generating…" : "Complete Orchestration"}
-              </Button>
+            <div className="mt-4 border-t border-border pt-3">
+              {stepIdx === null ? (
+                /* Not started: choose a run mode */
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      {completing
+                        ? completingStep ? `Generating ${completingStep}…` : "Finishing up…"
+                        : `${approvedCount} approved, ${skippedCount} skipped.`}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={startStepwise} disabled={completing || approvedCount === 0}>
+                        Run step by step
+                      </Button>
+                      <Button size="sm" onClick={runAll} disabled={completing || approvedCount === 0}>
+                        {completing ? "Generating…" : "Run all"}
+                      </Button>
+                    </div>
+                  </div>
+                  {!intakeReady() && approvedCount > 0 && (
+                    <p className="text-[11px] text-status-warning">
+                      An intake interview must be answered before generating - open it from the step above.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                /* Step-by-step: generate each step from its card, top to bottom */
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      {stepDone
+                        ? "All steps generated. Review on the right, then finish."
+                        : completing
+                          ? `Generating ${completingStep}…`
+                          : `${generatedSkills.filter((s) => stepList.some((x) => x.skill === s)).length} of ${stepList.length} generated. Use "Generate ${nextUngenerated ? skillTitle(nextUngenerated.skill) : "…"}" above to continue.`}
+                    </p>
+                    <div className="flex gap-2">
+                      {!stepDone && (
+                        <Button size="sm" variant="ghost" onClick={cancelStepwise} disabled={completing}>Cancel</Button>
+                      )}
+                      {stepDone && <Button size="sm" onClick={finishStepwise}>Finish</Button>}
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Each step generates from the ones before it. Editing a generated step resets everything below it.
+                  </p>
+                </div>
+              )}
+              {completionError && (
+                <p className="mt-2 text-xs text-status-danger">{completionError}</p>
+              )}
             </div>
           ) : (
             <div className="mt-4 border-t border-border pt-3 space-y-1">
-              <p className="text-xs text-status-success">
-                Orchestration complete. Pick a skill on the left to view the output.
-              </p>
+              {nextUngenerated ? (
+                <p className="text-xs text-status-warning">
+                  An edit reset some steps. Generate them above (starting with {skillTitle(nextUngenerated.skill)}) to bring the chain up to date.
+                </p>
+              ) : (
+                <p className="text-xs text-status-success">
+                  Orchestration complete. Pick a skill on the left to view the output.
+                </p>
+              )}
               {completionError && (
                 <p className="text-xs text-status-danger">
                   Some steps encountered errors: {completionError}
@@ -468,26 +824,36 @@ const STEP_DOT: Record<PlanStepState, string> = {
 const SEG = "rounded px-2.5 py-1 text-xs font-medium transition-colors";
 
 function StepCard({
-  step, index, completed, completing, onApprove, onSkip, onView,
+  step, index, decidePhase, stepping, generated, isNext, completing, onApprove, onSkip, onGenerate, onView,
 }: {
   step: PlanStep;
   index: number;
-  completed: boolean;
+  /** True before a run starts: show the Approve/Skip toggle. */
+  decidePhase: boolean;
+  /** True during a step-by-step run: show the timeline dot. */
+  stepping: boolean;
+  /** True once this step's artefact has been generated. */
+  generated: boolean;
+  /** True if this is the next ungenerated step (gets the Generate button). */
+  isNext: boolean;
   completing: boolean;
   onApprove: () => void;
   onSkip: () => void;
+  onGenerate: () => void;
   onView: () => void;
 }) {
   const approved = step.state !== "skipped";
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3">
-      <span
-        className={cn(
-          "absolute -left-[3px] mt-1 grid h-[18px] w-[18px] -translate-x-1/2 place-items-center rounded-full border-2",
-          completing ? "border-status-info bg-status-info animate-pulse" : STEP_DOT[step.state],
-        )}
-        aria-hidden
-      />
+      {stepping && (
+        <span
+          className={cn(
+            "absolute -left-[3px] mt-1 grid h-[18px] w-[18px] -translate-x-1/2 place-items-center rounded-full border-2",
+            completing ? "border-status-info bg-status-info animate-pulse" : generated ? STEP_DOT.done : STEP_DOT[step.state],
+          )}
+          aria-hidden
+        />
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -499,7 +865,7 @@ function StepCard({
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          {!completed ? (
+          {decidePhase ? (
             <div className="flex rounded-md border border-border p-0.5" role="group" aria-label="Approve or skip">
               <button
                 type="button"
@@ -518,13 +884,24 @@ function StepCard({
                 Skip
               </button>
             </div>
-          ) : (
+          ) : !approved ? (
+            <>
+              <Button size="sm" variant="outline" onClick={onGenerate} disabled={completing}>
+                {completing ? "Generating…" : `Generate ${skillTitle(step.skill)}`}
+              </Button>
+              <Badge className="bg-status-na-bg text-status-na">Skipped</Badge>
+            </>
+          ) : generated ? (
             <>
               <Button size="sm" variant="outline" onClick={onView}>View</Button>
-              {approved
-                ? <Badge className="bg-status-success-bg text-status-success">Generated</Badge>
-                : <Badge className="bg-status-na-bg text-status-na">Skipped</Badge>}
+              <Badge className="bg-status-success-bg text-status-success">Generated</Badge>
             </>
+          ) : isNext ? (
+            <Button size="sm" onClick={onGenerate} disabled={completing}>
+              {completing ? "Generating…" : `Generate ${skillTitle(step.skill)}`}
+            </Button>
+          ) : (
+            <Badge variant="outline" className="text-muted-foreground">Not generated</Badge>
           )}
         </div>
       </div>

@@ -16,5 +16,6 @@ export interface OrchestratorApi {
     step: PlanStep,
     onChunk: (chunk: ExecutionChunk) => void,
     signal: AbortSignal,
+    context?: string,
   ) => Promise<SkillExecution>;
 }

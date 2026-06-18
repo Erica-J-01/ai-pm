@@ -49,6 +49,15 @@ export function ExecutionPanel() {
           onViewSkill={ws.previewSkill}
           onComplete={onComplete}
           onVizDecision={(approved) => { if (ws.activeProjectId) ws.setRiskViz(ws.activeProjectId, approved); }}
+          onGenerateStep={(skill) => (ws.activeProjectId ? ws.regenerate(ws.activeProjectId, skill) : Promise.resolve())}
+          onFinalizeStepwise={(decisions) => {
+            if (ws.activeProjectId) ws.finalizeStepwise(ws.activeProjectId, decisions);
+          }}
+          generatedSkills={ws.activeProjectId ? ws.generatedSkills[ws.activeProjectId] ?? [] : []}
+          onIntakeChanged={(_skill, affected) => { if (ws.activeProjectId) ws.markStale(ws.activeProjectId, affected); }}
+          onIntakeAnswersChange={(skill, answers) => { if (ws.activeProjectId) ws.setIntakeAnswers(ws.activeProjectId, skill, answers); }}
+          intakeAnswersSeed={ws.activeProjectId ? ws.intakeAnswers[ws.activeProjectId] ?? {} : {}}
+          onRunInput={(i) => { if (ws.activeProjectId) ws.setOrchestrationInput(ws.activeProjectId, i); }}
           orchestrated={!!ws.activeProjectId && ws.orchestratedProjects.includes(ws.activeProjectId)}
           defaultInput={ws.activeProjectId === "p-notifications" ? DEMO_INPUT : ""}
         />

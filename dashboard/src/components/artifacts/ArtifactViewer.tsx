@@ -7,6 +7,7 @@ import {
 import { Pencil, Sparkles } from "lucide-react";
 import { skillTitle } from "@/data/demo";
 import { useToast } from "@/store/toast";
+import { useWorkspace } from "@/store/workspace";
 import { STEPS } from "@/components/onboarding/steps";
 import { Button } from "@/components/ui/button";
 import { ConfluencePublishDialog } from "./ConfluencePublishDialog";
@@ -45,7 +46,9 @@ export function ArtifactViewer({
   skillStatus?: Partial<Record<SkillId, "approved" | "skipped">>;
 }) {
   const { notify } = useToast();
+  const ws = useWorkspace();
   const [confluenceOpen, setConfluenceOpen] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   if (!execution) return <EmptyState />;
 
@@ -59,6 +62,14 @@ export function ArtifactViewer({
   const editable = EDITABLE.has(skill as SkillId) && !!onEdit;
   const skipped = skillStatus?.[skill as SkillId] === "skipped";
   const empty = !execution.payload && !execution.markdown.trim();
+  const isStale = !!(ws.activeProjectId && ws.staleSkills[ws.activeProjectId]?.includes(skill as SkillId));
+
+  const doRegenerate = async () => {
+    if (!ws.activeProjectId) return;
+    setRegenerating(true);
+    await ws.regenerate(ws.activeProjectId, skill as SkillId);
+    setRegenerating(false);
+  };
 
   const confluenceConnector = connectors.find((c) => c.id === "confluence");
 
@@ -100,6 +111,17 @@ export function ArtifactViewer({
       {skipped && (
         <div className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           This section was skipped during orchestration. Generate it to populate a starting draft, or Edit to add it manually.
+        </div>
+      )}
+
+      {isStale && !skipped && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-status-warning/40 bg-status-warning-bg px-3 py-2">
+          <p className="text-xs text-status-warning">
+            An upstream artefact changed - this may be out of date. Regenerate to derive it from the latest inputs.
+          </p>
+          <Button size="sm" variant="outline" className="shrink-0" onClick={doRegenerate} disabled={regenerating}>
+            {regenerating ? "Regenerating…" : "Regenerate"}
+          </Button>
         </div>
       )}
 

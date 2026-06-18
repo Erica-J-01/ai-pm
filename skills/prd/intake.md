@@ -127,7 +127,7 @@ Record each confirmed value directly as an NFR row. For any skipped or unknown i
 
 **Suggested answers:**
 - A) Yes - the findings are in what I shared
-- B) Partially - some discovery has been done; the rest is based on assumptions
+- B) Partially - some discovery has been done, and the rest is based on assumptions
 - C) No discovery done - we're going straight to requirements
 - D) Discovery is not needed for this type of work (e.g. infrastructure, internal tooling)
 
@@ -170,7 +170,7 @@ Record each confirmed value directly as an NFR row. For any skipped or unknown i
 - B) Multi-locale is in scope for this phase - I'll specify which
 - C) Not yet decided
 
-*If A: add as a Constraint in section 4 (e.g. "UK English only; multi-locale deferred to future phase"). Do not leave it assumed.*
+*If A: add as a Constraint in section 4 (e.g. "UK English only, multi-locale deferred to future phase"). Do not leave it assumed.*
 
 ---
 
@@ -192,10 +192,10 @@ Once Q10 has been answered, proceed to the PRD. Do not ask further questions unl
 Carry all answers forward:
 - Q1 answer → determines PRD vs BRD format
 - Q2 answer → informs Purpose & Background framing
-- Q3 answers → populates Users & Stakeholders section; any scope discrepancy resolutions populate the Scope Changes section
-- Q4 answers → populates Goals & Success Metrics (use provided targets; flag gate-style or outstanding ones as open questions)
-- Q5 answers → populates Constraints in section 4
-- Q5b answers → populates NFR table with confirmed targets; unknowns become `[NEEDS TARGET]` rows and open questions
+- Q3 answers → populate the Users & Stakeholders section. Any scope discrepancy resolutions populate the Scope Changes section
+- Q4 answers → populate Goals & Success Metrics. Use the provided targets, and flag gate-style or outstanding ones as open questions
+- Q5 answers → populate Constraints in section 4
+- Q5b answers → populate the NFR table with confirmed targets. Unknowns become `[NEEDS TARGET]` rows and open questions
 - Q6 answers → populates Out of Scope section 7
 - Q7 answer → adds discovery caveat if needed
 - Q8 answer → ensures requirements reflect current state, not stale document

@@ -84,7 +84,7 @@ If a value is unknown, the requirement is not ready to be written. Move it to Op
 - FR duplicates information already stated in another FR → remove the duplicate
 - FR reads like it was copied verbatim from the source input → rewrite
 - FR describes a process rule or team behaviour (e.g. "content must be reviewed by…") → move to Assumptions or Constraints
-- FR and an NFR row state the same target (e.g. response time in both) → remove the FR; NFRs own non-functional targets
+- FR and an NFR row state the same target (e.g. response time in both) → remove the FR, since NFRs own non-functional targets
 - FR error state uses vague language ("appropriate message", "clearly worded") without specifying the exact message or condition → rewrite or move to Open Questions
 
 ---
@@ -122,13 +122,13 @@ Before writing sections 4, 6, and 7, verify every item in the table below is acc
 | Security | Authentication, authorisation, and encryption controls named specifically - not just "security implemented" | NFR |
 | Accessibility | WCAG level stated (e.g. WCAG 2.1 AA) | NFR or Out of Scope |
 | Availability | Uptime or SLA target | NFR |
-| Data retention | How long each data type is stored; who manages deletion | NFR |
+| Data retention | How long each data type is stored, and who manages deletion | NFR |
 | Account deletion / right to erasure | Can a user delete their account and all associated data? Required under UK GDPR unless explicitly out of scope | NFR or Out of Scope |
-| Audit logging | Which user and system actions are logged; how long logs are retained; especially critical for regulated or financial products | NFR |
+| Audit logging | Which user and system actions are logged, and how long logs are retained. Especially critical for regulated or financial products | NFR |
 | API rate limiting | Behaviour when quota is exhausted for each named external API | NFR or FR (error state) |
-| Session management | Timeout period; concurrent session rules | NFR |
+| Session management | Timeout period and concurrent session rules | NFR |
 | Browser and device support | Named browsers and minimum versions - without this QA has no acceptance threshold | NFR or Constraint |
-| Localisation / internationalisation | Target locale(s) stated explicitly; if single-locale only, state it as a constraint and note future scope - do not leave it assumed | Constraint or Out of Scope |
+| Localisation / internationalisation | Target locale(s) stated explicitly. If single-locale only, state it as a constraint and note future scope, and do not leave it assumed | Constraint or Out of Scope |
 
 ---
 

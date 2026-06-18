@@ -99,7 +99,7 @@ export const STEPS: OnbStep[] = [
     { name: "classification", label: "Intake classification", kind: "text" },
     { name: "nextStep", label: "Recommended next step", kind: "textarea" },
   ]},
-  { id: "risk-scan", title: "Risk Scan", intro: "List the early risks; likelihood and impact build the matrix.", fields: [
+  { id: "risk-scan", title: "Risk Scan", intro: "List the early risks. Likelihood and impact build the matrix.", fields: [
     { name: "risks", label: "Risks", kind: "list", addLabel: "Add risk", required: true, itemFields: [
       { name: "risk", label: "Risk", kind: "text", required: true, placeholder: "What could go wrong" },
       { name: "category", label: "Category", kind: "select", options: RISK_CATEGORY },
@@ -228,7 +228,7 @@ export const STEPS: OnbStep[] = [
       { name: "date", label: "Date", kind: "text" },
     ]},
   ]},
-  { id: "stories", title: "User Stories", intro: "Add epics; each holds its own stories.", fields: [
+  { id: "stories", title: "User Stories", intro: "Add epics. Each holds its own stories.", fields: [
     { name: "epics", label: "Epics", kind: "epics", required: true, storyFields: [
       { name: "title", label: "Story title", kind: "text", placeholder: "Short goal" },
       { name: "asA", label: "As a", kind: "text", placeholder: "persona" },
@@ -261,7 +261,7 @@ export const STEPS: OnbStep[] = [
       { name: "condition", label: "Condition", kind: "text" },
     ]},
   ]},
-  { id: "sprint-planning", title: "Sprint Planning", intro: "Per-person capacity; committed load is P0 + P1.", fields: [
+  { id: "sprint-planning", title: "Sprint Planning", intro: "Per-person capacity. Committed load is P0 + P1.", fields: [
     { name: "team", label: "Team capacity", kind: "list", addLabel: "Add person", required: true, itemFields: [
       { name: "person", label: "Person", kind: "text", placeholder: "Name" },
       { name: "availableDays", label: "Available days", kind: "text" },
@@ -413,7 +413,7 @@ export const STEPS: OnbStep[] = [
       { name: "date", label: "Date", kind: "text" },
     ]},
   ]},
-  { id: "roadmap", title: "Roadmap", intro: "Sprint/week timeline; tasks render as bars.", fields: [
+  { id: "roadmap", title: "Roadmap", intro: "Sprint/week timeline. Tasks render as bars.", fields: [
     { name: "goal", label: "Goal", kind: "text", required: true },
     { name: "horizon", label: "Horizon", kind: "text", placeholder: "e.g. Next 8 weeks" },
     { name: "weeks", label: "Total weeks", kind: "select", options: WEEKS },
@@ -496,7 +496,7 @@ export const TEST_DATA: OnbData = {
     approvals: [{ role: "Sponsor", name: "Sarah Chen" }, { role: "Tech Lead", name: "Marcus Reid" }, { role: "Project Manager", name: "" }],
   },
   discovery: {
-    problem: "Enterprise clients have no proactive signal for payment failures; they learn from their own customers. The root need is a timely, configurable alert, not a dashboard.",
+    problem: "Enterprise clients have no proactive signal for payment failures, so they learn from their own customers. The root need is a timely, configurable alert, not a dashboard.",
     success: "A notification is delivered within 60 seconds of a payment event to the right account contacts.",
     affected: [
       { stakeholder: "Enterprise finance teams", pain: "Find out about failures from angry customers" },
@@ -504,10 +504,10 @@ export const TEST_DATA: OnbData = {
     ],
     findings: [
       { finding: "Kafka event layer already exists and can be reused", confidence: "High" },
-      { finding: "MVP is email + in-app; in-app is a stretch", confidence: "High" },
+      { finding: "MVP is email plus in-app, and in-app is a stretch", confidence: "High" },
       { finding: "Recipients configured at account level, not per user", confidence: "Medium" },
     ],
-    conflicts: [{ conflict: "Sarah wants webhooks soon; engineering wants email-only for MVP" }],
+    conflicts: [{ conflict: "Sarah wants webhooks soon, and engineering wants email-only for MVP" }],
     unknowns: [
       { unknown: "Email delivery failure handling (retry vs alert)", resolve: "Confirm with Marcus" },
       { unknown: "Notification history retention", resolve: "Confirm with Sarah" },
@@ -689,7 +689,7 @@ export const TEST_DATA: OnbData = {
         revisedPlan: "Webhook delivery moved into Sprint 2",
         reason: "Enterprise client request ahead of the Salesforce conference",
         changeProposedBy: "Sarah Chen",
-        deliveryImpact: "Sprint 2 capacity reduced; NOTIF-6 deferred to Sprint 3",
+        deliveryImpact: "Sprint 2 capacity reduced, and NOTIF-6 deferred to Sprint 3",
         technicalImpact: "New webhook service required in Sprint 2",
         productOwnerImpact: "Notification history de-prioritised to Sprint 3",
         costImpact: "Neutral - within $80k budget",
@@ -711,7 +711,7 @@ export const TEST_DATA: OnbData = {
     ],
     notes: [
       { note: "Kafka event layer already exists and can be reused for payment events." },
-      { note: "MVP is email only; in-app notification centre is a stretch goal." },
+      { note: "MVP is email only. The in-app notification centre is a stretch goal." },
       { note: "Recipients are configured at the account level, not per user." },
     ],
     decisions: [
@@ -746,16 +746,16 @@ export const TEST_DATA: OnbData = {
       { question: "Does the SendGrid tier support enterprise volume?" },
       { question: "How does the feature flag interact with account settings?" },
     ],
-    scopeImplications: "Redis deduplication adds ~3 days not in the original estimate; flag this against the 6-week deadline.",
+    scopeImplications: "Redis deduplication adds ~3 days not in the original estimate. Flag this against the 6-week deadline.",
     verdict: "Feasible with conditions - resolve Redis provisioning before Week 3.",
   },
   retrospective: {
     sprint: "Sprint 1",
-    outcome: "Shipped the email engine to staging; one stretch item carried over.",
+    outcome: "Shipped the email engine to staging. One stretch item carried over.",
     attendees: ["Marcus", "Aiko", "Priya", "Lin", "PM"],
     wentWell: [{ item: "Kafka reuse saved a week" }, { item: "Daily QA pairing caught issues early" }],
     didnt: [
-      { item: "Redis region misconfig blocked NOTIF-6", impact: "Lost two days; stretch slipped" },
+      { item: "Redis region misconfig blocked NOTIF-6", impact: "Lost two days, stretch slipped" },
       { item: "Email copy arrived late", impact: "Template build started a day late" },
     ],
     actions: [
@@ -767,7 +767,7 @@ export const TEST_DATA: OnbData = {
   "stakeholder-update": {
     audience: "Sarah Chen (Sponsor)",
     status: "At risk",
-    headline: "Notification engine on track for email MVP; one infra blocker being resolved.",
+    headline: "Notification engine on track for email MVP. One infra blocker being resolved.",
     progress: [
       { item: "Kafka consumer and dedup complete (NOTIF-2)" },
       { item: "Email templates approved (NOTIF-5)" },

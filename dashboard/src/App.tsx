@@ -34,9 +34,13 @@ export default function App() {
         onSelectSkill={ws.selectSkill}
         onAddProject={(name) => { if (ws.activeClientId) ws.addProject(ws.activeClientId, name); }}
         onAddClient={ws.addClient}
+        onDeleteProject={ws.deleteProject}
+        onDeleteClient={ws.deleteClient}
         onManageConnectors={() => setConnectorsOpen(true)}
         skillsUnlocked={skillsUnlocked}
         skillStatus={ws.skillStatus[ws.activeProjectId ?? ""] ?? {}}
+        generatedSkills={ws.generatedSkills[ws.activeProjectId ?? ""] ?? []}
+        unseenSkills={ws.unseenSkills[ws.activeProjectId ?? ""] ?? []}
         console={<ExecutionPanel />}
         canvas={
           <ArtifactViewer
