@@ -1,7 +1,7 @@
 ---
 name: roadmap
 description: Builds or updates a product or delivery roadmap from a charter, PRD, backlog, or stakeholder priorities. Use whenever someone says "build a roadmap", "what's our roadmap", "plan the next quarter", "now/next/later", or wants initiatives sequenced into themes and time horizons with dependencies and confidence. Produces a Now/Next/Later or quarterly roadmap - not a sprint plan.
-version: 2.0.0
+version: 1.0.0
 argument-hint: <charter, PRD, backlog, or priority list>
 allowed-tools: Read
 ---

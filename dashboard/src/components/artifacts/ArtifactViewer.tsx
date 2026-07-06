@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import {
   type McpConnector, type SkillExecution, type SaveDestination, type SkillId,
   isRiskScan, isReleaseChecklist, isDecisionLog, isSprintPlan,
@@ -12,17 +12,22 @@ import { STEPS } from "@/components/onboarding/steps";
 import { Button } from "@/components/ui/button";
 import { ConfluencePublishDialog } from "./ConfluencePublishDialog";
 import { generatePublishMarkdown } from "@/lib/generatePublishMarkdown";
-import { RiskScanView } from "./RiskScanView";
+import { reportError } from "@/lib/telemetry";
 import { ReleaseChecklistView } from "./ReleaseChecklistView";
 import { DecisionLogView } from "./DecisionLogView";
 import { SprintPlanView } from "./SprintPlanView";
-import { SprintReportView } from "./SprintReportView";
-import { BudgetTrackerView } from "./BudgetTrackerView";
 import { RoadmapView } from "./RoadmapView";
 import { StoriesView } from "./StoriesView";
 import { DocumentView } from "./DocumentView";
-import { MarkdownArtifact } from "./MarkdownArtifact";
 import { ActionBar } from "./ActionBar";
+
+// Lazy-load the chart-heavy views (recharts) and the markdown renderer
+// (react-markdown) so those large libraries leave the entry chunk and load
+// only when such an artefact is actually opened.
+const RiskScanView = lazy(() => import("./RiskScanView").then((m) => ({ default: m.RiskScanView })));
+const SprintReportView = lazy(() => import("./SprintReportView").then((m) => ({ default: m.SprintReportView })));
+const BudgetTrackerView = lazy(() => import("./BudgetTrackerView").then((m) => ({ default: m.BudgetTrackerView })));
+const MarkdownArtifact = lazy(() => import("./MarkdownArtifact").then((m) => ({ default: m.MarkdownArtifact })));
 
 /** Skills with a structured schema can be edited via the form (not raw markdown). */
 const EDITABLE = new Set(STEPS.map((s) => s.id));
@@ -50,6 +55,13 @@ export function ArtifactViewer({
   const [confluenceOpen, setConfluenceOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
+  // Serialize the publish markdown once per execution instead of on every render
+  // (it was re-run inline in JSX, including with the publish dialog closed).
+  const publishMarkdown = useMemo(
+    () => (execution ? generatePublishMarkdown(execution) : ""),
+    [execution],
+  );
+
   if (!execution) return <EmptyState />;
 
   const p = execution.payload;
@@ -67,8 +79,14 @@ export function ArtifactViewer({
   const doRegenerate = async () => {
     if (!ws.activeProjectId) return;
     setRegenerating(true);
-    await ws.regenerate(ws.activeProjectId, skill as SkillId);
-    setRegenerating(false);
+    try {
+      await ws.regenerate(ws.activeProjectId, skill as SkillId);
+    } catch (e) {
+      reportError(e, { source: "artifact.regenerate", skill });
+      notify({ title: `Regenerate failed - ${e instanceof Error ? e.message : "please try again"}`, tone: "danger" });
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const confluenceConnector = connectors.find((c) => c.id === "confluence");
@@ -77,14 +95,36 @@ export function ArtifactViewer({
     if (dest === "confluence") { setConfluenceOpen(true); return; }
 
     if (dest === "clipboard") {
-      const md = generatePublishMarkdown(execution);
-      navigator.clipboard.writeText(md)
+      navigator.clipboard.writeText(publishMarkdown)
         .then(() => notify({ title: "Markdown copied to clipboard", tone: "success" }))
         .catch(() => notify({ title: "Copy failed - check browser permissions", tone: "danger" }));
       return;
     }
 
-    if (dest === "local") { notify({ title: "Saved locally", tone: "success" }); return; }
+    if (dest === "local") {
+      // Real download of the markdown, not a fake success toast. A browser cannot
+      // write into the clients/ tree - that is a backend concern (see BACKEND_TODO.md).
+      try {
+        const date = new Date().toISOString().slice(0, 10);
+        // Filename: <menu item>_<project>_<date>.md, e.g. user_stories_acme_corp_2026-07-06.md
+        const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+        const projectName = ws.projects.find((p) => p.id === ws.activeProjectId)?.name ?? "";
+        const name = [slug(title), slug(projectName), date].filter(Boolean).join("_") || "artefact";
+        const blob = new Blob([publishMarkdown], { type: "text/markdown;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${name}.md`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        notify({ title: "Downloaded as markdown", tone: "success" });
+      } catch {
+        notify({ title: "Download failed - try Copy markdown instead", tone: "danger" });
+      }
+      return;
+    }
 
     // Jira, Drive, Notion, Gmail - not yet implemented
     notify({ title: `${dest.charAt(0).toUpperCase() + dest.slice(1)} publishing coming soon`, tone: "info" });
@@ -125,6 +165,19 @@ export function ArtifactViewer({
         </div>
       )}
 
+      {execution.truncated && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-status-warning/40 bg-status-warning-bg px-3 py-2">
+          <p className="text-xs text-status-warning">
+            This artefact hit the length limit and may be cut off. Regenerate for the full document, or shorten the input.
+          </p>
+          {editable && (
+            <Button size="sm" variant="outline" className="shrink-0" onClick={doRegenerate} disabled={regenerating}>
+              {regenerating ? "Regenerating…" : "Regenerate"}
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="min-h-0 flex-1 overflow-auto pr-1">
         {empty ? (
           <div className="grid h-full place-items-center text-center">
@@ -137,20 +190,24 @@ export function ArtifactViewer({
               </p>
             </div>
           </div>
-        ) : hasVisual ? (
-          <>
-            {isRiskScan(p) && <RiskScanView payload={p} />}
-            {isReleaseChecklist(p) && <ReleaseChecklistView payload={p} />}
-            {isDecisionLog(p) && <DecisionLogView payload={p} />}
-            {isSprintPlan(p) && <SprintPlanView payload={p} />}
-            {isSprintReport(p) && <SprintReportView payload={p} />}
-            {isBudgetTracker(p) && <BudgetTrackerView payload={p} />}
-            {isRoadmap(p) && <RoadmapView payload={p} />}
-            {isStories(p) && <StoriesView payload={p} />}
-            {isDoc(p) && <DocumentView payload={p} />}
-          </>
         ) : (
-          <MarkdownArtifact markdown={execution.markdown} />
+          <Suspense fallback={<p className="text-xs text-muted-foreground">Loading…</p>}>
+            {hasVisual ? (
+              <>
+                {isRiskScan(p) && <RiskScanView payload={p} />}
+                {isReleaseChecklist(p) && <ReleaseChecklistView payload={p} />}
+                {isDecisionLog(p) && <DecisionLogView payload={p} />}
+                {isSprintPlan(p) && <SprintPlanView payload={p} />}
+                {isSprintReport(p) && <SprintReportView payload={p} />}
+                {isBudgetTracker(p) && <BudgetTrackerView payload={p} />}
+                {isRoadmap(p) && <RoadmapView payload={p} />}
+                {isStories(p) && <StoriesView payload={p} />}
+                {isDoc(p) && <DocumentView payload={p} />}
+              </>
+            ) : (
+              <MarkdownArtifact markdown={execution.markdown} />
+            )}
+          </Suspense>
         )}
       </div>
 
@@ -162,7 +219,7 @@ export function ArtifactViewer({
           onOpenChange={setConfluenceOpen}
           connector={confluenceConnector}
           artifactTitle={title}
-          markdown={generatePublishMarkdown(execution)}
+          markdown={publishMarkdown}
         />
       )}
     </div>

@@ -417,7 +417,7 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
                 <tr key={i} className="border-b border-border/60 last:border-0">
                   <td className="px-3 py-2">{a.assumption}</td>
                   <td className="px-3 py-2">
-                    <StatusBadge tone={CONFIDENCE_TONE[a.confidence]}>{a.confidence}</StatusBadge>
+                    <StatusBadge tone={CONFIDENCE_TONE[a.confidence] ?? "neutral"}>{a.confidence}</StatusBadge>
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">{a.riskIfWrong}</td>
                 </tr>
@@ -607,8 +607,8 @@ interface MatrixTooltipProps {
   payload?: { payload: { ref: string; x: number; y: number } }[];
 }
 function MatrixTooltip({ active, payload }: MatrixTooltipProps) {
-  if (!active || !payload?.length) return null;
-  const p = payload[0].payload;
+  const p = payload?.[0]?.payload;
+  if (!active || !p) return null;
   return (
     <div className="rounded-md border border-border bg-popover px-2 py-1 text-xs shadow-pop">
       <p className="font-mono font-semibold">{p.ref}</p>
@@ -623,11 +623,12 @@ interface CategoryTooltipProps {
   label?: string;
 }
 function CategoryTooltip({ active, payload, label }: CategoryTooltipProps) {
-  if (!active || !payload?.length) return null;
+  const value = payload?.[0]?.value;
+  if (!active || value === undefined) return null;
   return (
     <div className="rounded-md border border-border bg-popover px-2 py-1 text-xs shadow-pop">
       <p className="font-medium">{label}</p>
-      <p className="text-muted-foreground">{payload[0].value} risk{payload[0].value !== 1 ? "s" : ""}</p>
+      <p className="text-muted-foreground">{value} risk{value !== 1 ? "s" : ""}</p>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import type { ArtifactPayload, DocSection, DocSkill, SkillId, StatusTone } from 
  *
  * Visual skills (risk-scan, sprint-planning, roadmap, ...) have bespoke views
  * driven by data the markdown can't reliably reconstruct, so they return
- * `undefined` here and fall back to the markdown / TipTap view - which is
+ * `undefined` here and fall back to the markdown renderer - which is
  * always safe.
  */
 
@@ -50,13 +50,15 @@ function parseSections(markdown: string): DocSection[] {
   for (const line of lines) {
     const h = /^(#{1,6})\s+(.*)$/.exec(line);
     if (h) {
+      const hashes = h[1] ?? "";
+      const rest = h[2] ?? "";
       // H1 is the document title - drop it, but keep H2+ as section boundaries.
-      if (h[1].length === 1 && raw.length === 0 && current.lines.every((l) => !l.trim())) {
+      if (hashes.length === 1 && raw.length === 0 && current.lines.every((l) => !l.trim())) {
         current = { lines: [] };
         continue;
       }
       if (current.heading !== undefined || current.lines.some((l) => l.trim())) raw.push(current);
-      current = { heading: clean(h[2]) || undefined, lines: [] };
+      current = { heading: clean(rest) || undefined, lines: [] };
     } else {
       current.lines.push(line);
     }
@@ -153,11 +155,11 @@ function parseField(line: string): { label: string; value: string } | null {
   let m = /^\*\*(.+?):\*\*\s*(.+)$/.exec(s) || /^\*\*(.+?)\*\*\s*:\s*(.+)$/.exec(s);
   if (!m) {
     const plain = /^([A-Za-z][A-Za-z0-9 /&()'.-]{0,38}):\s+(\S.*)$/.exec(s);
-    if (plain && !/https?:$/.test(plain[1])) m = plain;
+    if (plain && !/https?:$/.test(plain[1] ?? "")) m = plain;
   }
   if (!m) return null;
-  const label = clean(m[1]);
-  const value = clean(m[2]);
+  const label = clean(m[1] ?? "");
+  const value = clean(m[2] ?? "");
   if (!label || !value) return null;
   return { label, value };
 }
@@ -179,8 +181,9 @@ function deriveStatus(sections: DocSection[]): { label: string; tone: StatusTone
       if (!/status|rag|health/i.test(p.label)) continue;
       const hit = /\b(green|amber|red)\b/i.exec(p.value);
       if (hit) {
-        const key = hit[1].toLowerCase();
-        return { label: `${hit[1].toUpperCase()} - ${p.value}`.slice(0, 60), tone: TONE[key] };
+        const word = hit[1] ?? "";
+        const tone = TONE[word.toLowerCase()];
+        if (tone) return { label: `${word.toUpperCase()} - ${p.value}`.slice(0, 60), tone };
       }
     }
   }

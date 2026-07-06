@@ -1,7 +1,7 @@
 ---
 name: sprint-report
 description: Analyses Jira sprint data and produces a concise PM-ready report. Use whenever someone shares a sprint report, burndown chart, velocity chart, board screenshot, or Jira ticket data and wants to understand sprint health, delivery confidence, risks, blockers, or team performance. Trigger for phrases like "analyse this sprint", "what does the burndown say", "how is the sprint looking", "write up the sprint report", or "what should I tell the team today".
-version: 2.0.0
+version: 1.0.0
 argument-hint: <sprint data, burndown, or Jira board link>
 allowed-tools: Read, mcp__claude_ai_Atlassian_Rovo__searchJiraIssuesUsingJql, mcp__claude_ai_Atlassian_Rovo__getJiraIssue, mcp__claude_ai_Atlassian_Rovo__createConfluencePage, mcp__claude_ai_Atlassian_Rovo__getConfluenceSpaces
 ---

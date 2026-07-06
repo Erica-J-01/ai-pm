@@ -40,7 +40,7 @@ import { ACME_DATA } from "@/data/acmeData";
 import { PORTAL_DATA } from "@/data/portalData";
 import { downstreamOf, dependenciesOf } from "@/data/skillChain";
 import { buildChainContext, intakeAnswersContext } from "@/api/artifactDigest";
-import { getClaudeApiKey, regenerateSkillLive } from "@/api/claudeOrchestrator";
+import { liveClaudeAvailable, regenerateSkillLive } from "@/api/claudeOrchestrator";
 
 /** A single named record for a multi-record skill (a meeting, a sprint, etc.). */
 export interface ArtifactRecord {
@@ -527,9 +527,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
    * it re-seeds from stub. Either way the stale flag for this skill is cleared.
    */
   const regenerate = useCallback(async (projectId: string, skill: SkillId) => {
-    const apiKey = getClaudeApiKey();
     const input = orchestrationInput[projectId] ?? "";
-    if (apiKey && input) {
+    if (liveClaudeAvailable() && input) {
       const generated: Partial<Record<SkillId, SkillExecution>> = {};
       for (const dep of dependenciesOf(skill)) {
         const exec = claudeExecMap[`${projectId}::${dep}`]
@@ -545,7 +544,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setClaudeExecMap((m) => ({ ...m, [`${projectId}::${skill}`]: exec }));
         setActiveSkill(skill);
         setCurrent(exec);
-      } catch { /* keep the stale flag if the call fails */ return; }
+      } catch (e) {
+        // Do NOT mark the skill generated/seen on failure, and do NOT clear the
+        // stale flag. Rethrow so the caller can surface it (a swallowed failure
+        // made the primary Generate button silently do nothing).
+        throw e instanceof Error ? e : new Error(String(e));
+      }
     } else {
       const seed = (artifactValues[projectId]?.[skill] ?? TEST_DATA[skill] ?? {}) as StepValues;
       const step = STEPS.find((x) => x.id === skill);

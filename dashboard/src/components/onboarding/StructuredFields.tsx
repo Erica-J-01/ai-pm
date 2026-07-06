@@ -196,7 +196,7 @@ function EpicsEditor({
   const addStory = (ei: number) => {
     const blank: Row = {};
     field.storyFields.forEach((sf) => { blank[sf.name] = sf.kind === "select" ? (sf.options?.[0] ?? "") : ""; });
-    setEpic(ei, { stories: [...(value[ei].stories ?? []), blank] });
+    setEpic(ei, { stories: [...(value[ei]?.stories ?? []), blank] });
   };
 
   return (

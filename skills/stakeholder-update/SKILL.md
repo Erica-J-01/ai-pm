@@ -1,7 +1,7 @@
 ---
 name: stakeholder-update
 description: Turns project status, sprint reports, or recent artefacts into a concise, audience-appropriate stakeholder update - email, Slack post, or exec summary. Use whenever someone says "write a stakeholder update", "send a status update", "update the sponsor", "weekly comms", or wants to translate delivery detail into a message for a non-delivery audience. Standalone - consumes other artefacts but does not chain into build skills.
-version: 2.0.0
+version: 1.0.0
 argument-hint: <status, sprint report, or recent artefacts + audience>
 allowed-tools: Read, mcp__claude_ai_Gmail__create_draft, mcp__claude_ai_Atlassian_Rovo__createConfluencePage
 ---

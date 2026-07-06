@@ -4,9 +4,47 @@ All notable changes to AI PM Assistant are recorded here.
 
 ---
 
-## [3.4.0] - 2026-06-18
+## [2.6.0] - 2026-07-06
 
-A large dashboard release that turns orchestration into a real, chained, step-by-step pipeline, adds the interactive intake interview, and makes a generated project safe to live in. Additive to v3.3.1. No change to the CLI skill chain.
+A production-hardening release for the dashboard, driven by an adversarially verified scalability and deploy audit. It fixes bugs that failed silently on the deployed build, roughly halves the first-load payload, adds a frontend observability layer, and turns on stricter type safety. No change to the CLI skill chain. All changes are additive.
+
+### Deploy correctness (were silently broken on GitHub Pages)
+1. PDF upload works on the deployed build again. The pdf.js worker is now bundled as a same-origin asset instead of loaded from a CDN, which the production Content-Security-Policy blocked. A failed extraction now shows a visible error rather than adding a chip that looked like success.
+2. Live Claude mode no longer sends the API key to the static host. A single gate (a key AND the dev proxy) governs every live path, and in a production build it compiles away entirely, so the key is never transmitted off the page. The connector dialog now states plainly that live orchestration runs in local development only.
+3. The Pages deploy runs the type-check and the full test suite before publishing, so type-broken or failing code can no longer reach the public site.
+
+### Correctness fixes
+1. Long artefacts are no longer silently truncated. The output limit was raised and a cut-off response is detected and flagged with a Regenerate action instead of being marked complete.
+2. Save locally performs a real markdown download instead of showing a success toast that saved nothing. The file is named after the section, project, and date, for example user_stories_acme_corp_2026-07-06.md.
+3. Run all now stops on the first failed step instead of continuing to generate downstream sections from missing context and reporting completion. Nothing is saved on a failed run, so failed steps are never presented as finished work with placeholder data.
+4. The orchestration plan returned by the model is validated at runtime and unknown skill ids are dropped, so a malformed response gives a friendly message rather than a crash or an off-brand artefact.
+5. A failed live regeneration now surfaces an error toast instead of silently doing nothing, and the section is not marked generated.
+6. The theme provider no longer crashes the whole app at boot in privacy-hardened browsers or sandboxed iframes where storage access throws.
+
+### Performance and scalability
+1. The app is code-split. The main bundle drops from about 1.43 MB to about 267 kB by lazy-loading the chart views, the markdown renderer, and the prompt library, and by splitting vendor libraries into cacheable chunks.
+2. The artefact editor debounces its live preview so typing in a large artefact stays responsive.
+3. Live Claude calls now have a request timeout, exponential backoff with Retry-After on rate-limit and overloaded responses, and are aborted when the project changes or the console unmounts, so a hung request can no longer spin forever.
+4. The artefact viewer memoizes its publish-markdown serialization instead of rebuilding it on every render.
+
+### Type safety and cleanup
+1. Turned on noUncheckedIndexedAccess and fixed the resulting cases across the parser, digest, risk view, form fields, artefact builder, and seed data, so indexed access is compiler-enforced rather than convention.
+2. Removed three unused editor packages and corrected the comments that referenced them.
+3. The sprint overcommit calculation now has a single tested source instead of duplicated inline math.
+
+### Frontend observability (new)
+1. Added a client-side telemetry layer that captures uncaught errors, unhandled promise rejections, and React render faults, scrubs anything that looks like an API key, and emits structured records to the console by default with an optional remote sink.
+2. Wired it into the error boundary, global handlers, and the orchestration and regeneration failure paths, and added a lightweight event tracker that carries only skill ids and outcomes, never client names or artefact bodies. The server-side half of observability is tracked in dashboard/BACKEND_TODO.md.
+
+### Planning docs
+1. Added dashboard/PRODUCTION_TODO.md, the prioritized frontend readiness backlog this release worked through.
+2. Expanded dashboard/BACKEND_TODO.md into a full backend backlog (identity, data model, multi-tenancy, the hosted Claude proxy, connectors, real-time collaboration, and observability and ops), with a dependency-ordered build sequence and out-of-scope gaps.
+
+---
+
+## [2.5.0] - 2026-06-18
+
+A large dashboard release that turns orchestration into a real, chained, step-by-step pipeline, adds the interactive intake interview, and makes a generated project safe to live in. Additive to v2.4.1. No change to the CLI skill chain.
 
 ### Orchestration is now a chained pipeline
 1. Outputs chain: each approved step is generated from the artefacts before it (its direct dependencies in the delivery chain), not just from the original brief. So stories derive from the PRD, the PRD from charter and discovery, and so on.
@@ -45,9 +83,9 @@ A large dashboard release that turns orchestration into a real, chained, step-by
 
 ---
 
-## [3.3.1] - 2026-06-18
+## [2.4.1] - 2026-06-18
 
-A dashboard and skill-fidelity patch on top of v3.3.0. No change to the CLI skill chain.
+A dashboard and skill-fidelity patch on top of v2.4.0. No change to the CLI skill chain.
 
 ### Risk-scan depth on the artefact (not the orchestrator)
 1. Removed the required risk-scan level choice from the orchestration plan. The orchestrator no longer gates "Complete Orchestration" on a level, and generates one rich artefact that supports all depths.
@@ -58,7 +96,7 @@ A dashboard and skill-fidelity patch on top of v3.3.0. No change to the CLI skil
 ### Skill change
 1. `skills/risk-scan/SKILL.md`: Top Risk Snapshot now applies at all depths (previously Low only). The Depth table and the section conditional were updated to match.
 
-### PRD UI parity with the v3.3.0 skill
+### PRD UI parity with the v2.4.0 skill
 1. Added the sections the PRD skill produces that the form was missing: Scope Changes from Source Document, Assumptions and Constraints, and Sign-off.
 2. Enriched Dependencies (Type) and Users (Who they are), and added a `[NEEDS TARGET]` hint on NFR targets.
 
@@ -72,12 +110,12 @@ A dashboard and skill-fidelity patch on top of v3.3.0. No change to the CLI skil
 
 ---
 
-## [3.3.0] - 2026-06-18
+## [2.4.0] - 2026-06-18
 
 ### PRD intake interview protocol
 
 1. `skills/prd/intake.md` - new 10-question intake interview run before every PRD or BRD. Questions are asked one at a time. Six conditional questions trigger only when their signal is detected in the input (`no-discovery`, `stale-input`, `regulated`, `no-out-of-scope`, `integration-heavy`, `locale-specific`). Q10 (open risks and gaps) is the gate, so no PRD is generated until it has been answered.
-2. `skills/prd/SKILL.md` updated to `version: 3.1.0`. Restructured into seven numbered steps: intake interview → confirm feature areas → translate source material into requirements → requirement quality rules → error state enumeration → coverage check → output. The old "What to Gather First" table and flat instruction block are replaced by this stepped workflow.
+2. `skills/prd/SKILL.md` restructured into seven numbered steps: intake interview → confirm feature areas → translate source material into requirements → requirement quality rules → error state enumeration → coverage check → output. The old "What to Gather First" table and flat instruction block are replaced by this stepped workflow.
 3. Requirements quality rules were tightened. Each functional requirement covers one observable behaviour, adjectives need numbers, error states are their own FRs, and no FR contains TBD. A smell-check list catches copy-pasted deliverables, vague error messages, duplicate FRs, and misplaced process rules.
 4. Coverage check added (Step 6): verifies that performance, security, accessibility, availability, data retention, account deletion, audit logging, API rate limiting, session management, browser/device support, and localisation are each placed in an NFR row, a constraint, or an explicit out-of-scope entry - never silently omitted.
 5. Scope Changes section added to the output template: any item the intake interview surfaces that contradicts or extends the source document is logged explicitly as a numbered change with before/after and a confirmation owner.
@@ -85,26 +123,26 @@ A dashboard and skill-fidelity patch on top of v3.3.0. No change to the CLI skil
 
 ---
 
-## [3.2.0] - 2026-06-17
+## [2.3.0] - 2026-06-17
 
 ### Risk-scan pre-scan interview protocol
 
 1. `skills/risk-scan/intake.md` - new structured 13-question interview protocol run before every risk analysis. Questions are asked one at a time. Conditional questions trigger only when their signal (date gap, named dependencies, explicit risks, T&M model, multi-phase scope, team composition, compliance requirements, tight timeline, third-party integrations, or ambiguous phase) is detected in the input. The interview gates analysis, so no output is generated until Q13 (the open risk question) has been answered.
-2. `SKILL.md` updated to `version: 3.2.0`. Step 1 now reads `intake.md` and enforces the interview. The old "What to Gather" table is replaced with four rules (one question at a time, scan for signals, no skipping, and gate on Q13).
+2. `SKILL.md` updated so Step 1 now reads `intake.md` and enforces the interview. The old "What to Gather" table is replaced with four rules (one question at a time, scan for signals, no skipping, and gate on Q13).
 3. Output quality rules were tightened. Top-risks detail no longer restates register scores, the stakeholder summary is explicitly a synthesised paragraph rather than a risk re-list, and a new no-repetition rule across sections is enforced.
 
 ### Dashboard sample data enrichment
 
 1. Risk-scan sample in `dashboard/src/data/sampleArtifacts.ts` gains four new top-level fields: `recommendation` (Proceed / Proceed with Conditions / Do Not Proceed), `conditions` (array of named pre-conditions), `stakeholderSummary` (executive paragraph), and `decisionsNeeded` (array of decisions with owner and deadline).
-2. Each register entry gains a `proximity` field (`Week 1-2` / `Month 1` / `Month 2-3` / `Later`) consistent with the timeline visualisation added in v3.1.
+2. Each register entry gains a `proximity` field (`Week 1-2` / `Month 1` / `Month 2-3` / `Later`) consistent with the timeline visualisation added in v2.2.0.
 3. Risk descriptions and categories were updated to match the tighter output rules. `Business` is split into `Stakeholder` where appropriate, and descriptions are more specific and project-contextual.
 4. An `assumptions` array is added to the sample, each with `confidence` and `riskIfWrong` fields.
 
 ---
 
-## [3.1.0] - 2026-06-08
+## [2.2.0] - 2026-06-08
 
-v3.1 is **additive** to v3.0: it sharpens the live Claude orchestrator, splits
+v2.2.0 is **additive** to v2.1.0: it sharpens the live Claude orchestrator, splits
 risk visualisation into its own opt-in skill so the text scan and the dashboard
 no longer cost the same tokens, renders live Claude output as the same card
 artefacts the mock path produces, and hardens the client-only app. The CLI
@@ -130,9 +168,9 @@ skills, the orchestration chain, and the output templates are unchanged.
 
 ---
 
-## [3.0.0] - 2026-06-01
+## [2.1.0] - 2026-06-01
 
-v3.0 adds a web dashboard for the AI PM Assistant. It is **additive**: the CLI
+v2.1.0 adds a web dashboard for the AI PM Assistant. It is **additive**: the CLI
 skills, the orchestration chain, and the output templates are unchanged. The
 dashboard is a client-only React app (no backend) that reproduces the skill
 outputs as visual, editable artefacts and ships with seeded demo data so it

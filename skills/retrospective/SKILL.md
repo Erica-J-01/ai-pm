@@ -1,7 +1,7 @@
 ---
 name: retrospective
 description: Facilitates a sprint or project retrospective and turns raw retro input into a structured, action-oriented retro document. Use whenever someone says "run a retro", "sprint retrospective", "what went well / what didn't", "let's reflect on the sprint", or pastes raw retro notes that need structuring into themes and owned action items. Standalone - runs after a sprint or release, does not chain into build skills.
-version: 2.0.0
+version: 1.0.0
 argument-hint: <sprint name + retro notes, or "plan a retro">
 allowed-tools: Read
 ---

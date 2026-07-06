@@ -10,7 +10,7 @@ export interface SeedRecord { title: string; date: string; values: StepValues }
  */
 export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
   "sprint-planning": [
-    { title: "Sprint 1 plan", date: "2026-06-09", values: TEST_DATA["sprint-planning"] },
+    { title: "Sprint 1 plan", date: "2026-06-09", values: TEST_DATA["sprint-planning"] ?? {} },
     { title: "Sprint 2 plan", date: "2026-06-23", values: {
       team: [
         { person: "Marcus (BE)", availableDays: "10", points: "13", notes: "Full availability" },
@@ -27,7 +27,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     }},
   ],
   "sprint-report": [
-    { title: "Sprint 1 report", date: "2026-06-18", values: TEST_DATA["sprint-report"] },
+    { title: "Sprint 1 report", date: "2026-06-18", values: TEST_DATA["sprint-report"] ?? {} },
     { title: "Sprint 2 report", date: "2026-07-01", values: {
       sprint: "Sprint 2 - Webhooks",
       day: "9", totalDays: "10", status: "green", confidence: "88",
@@ -41,7 +41,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     }},
   ],
   "release-checklist": [
-    { title: "Notifications v1 release", date: "2026-07-03", values: TEST_DATA["release-checklist"] },
+    { title: "Notifications v1 release", date: "2026-07-03", values: TEST_DATA["release-checklist"] ?? {} },
     { title: "Webhooks v1.1 release", date: "2026-07-17", values: {
       release: "Notifications v1.1 (webhooks)",
       releaseType: "feature-flag",
@@ -56,7 +56,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     }},
   ],
   "decision-log": [
-    { title: "Webhook scope change", date: "2026-06-20", values: TEST_DATA["decision-log"] },
+    { title: "Webhook scope change", date: "2026-06-20", values: TEST_DATA["decision-log"] ?? {} },
     { title: "History deferred to Q3", date: "2026-06-28", values: {
       project: "Finwave Real-Time Notifications",
       entries: [{
@@ -75,7 +75,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     }},
   ],
   "meeting-notes": [
-    { title: "Notifications discovery kick-off", date: "2026-06-01", values: TEST_DATA["meeting-notes"] },
+    { title: "Notifications discovery kick-off", date: "2026-06-01", values: TEST_DATA["meeting-notes"] ?? {} },
     { title: "Sprint 1 review", date: "2026-06-18", values: {
       title: "Sprint 1 review",
       date: "2026-06-18",
@@ -96,7 +96,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     }},
   ],
   "tech-review": [
-    { title: "Notification engine review", date: "2026-06-04", values: TEST_DATA["tech-review"] },
+    { title: "Notification engine review", date: "2026-06-04", values: TEST_DATA["tech-review"] ?? {} },
     { title: "Webhook delivery review", date: "2026-06-21", values: {
       documentType: "Design note",
       summary: "Outbound webhook service with HMAC signing, exponential-backoff retries, and a dead-letter queue for failed deliveries.",
@@ -118,7 +118,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     }},
   ],
   retrospective: [
-    { title: "Sprint 1 retro", date: "2026-06-19", values: TEST_DATA.retrospective },
+    { title: "Sprint 1 retro", date: "2026-06-19", values: TEST_DATA.retrospective ?? {} },
     { title: "Sprint 2 retro", date: "2026-07-02", values: {
       sprint: "Sprint 2",
       outcome: "Webhooks shipped. Only the load test outstanding.",
@@ -130,7 +130,7 @@ export const RECORD_SEEDS: Record<string, SeedRecord[]> = {
     }},
   ],
   "stakeholder-update": [
-    { title: "Week 1 update", date: "2026-06-13", values: TEST_DATA["stakeholder-update"] },
+    { title: "Week 1 update", date: "2026-06-13", values: TEST_DATA["stakeholder-update"] ?? {} },
     { title: "Week 3 update", date: "2026-06-27", values: {
       audience: "Sarah Chen (Sponsor)",
       status: "On track",

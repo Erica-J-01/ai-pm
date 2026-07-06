@@ -176,4 +176,20 @@ export default defineConfig({
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   server: { port: 5173, open: true },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split the always-on vendors into stable, cacheable chunks so an app-code
+        // redeploy does not invalidate them. Only named here (not a blanket
+        // node_modules rule) so dynamically-imported libs - recharts, react-markdown,
+        // skillPrompts, pdfjs - keep their own on-demand chunks.
+        manualChunks(id) {
+          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/") || id.includes("node_modules/scheduler")) return "react-vendor";
+          if (id.includes("node_modules/framer-motion") || id.includes("node_modules/motion")) return "motion-vendor";
+          if (id.includes("node_modules/@radix-ui")) return "radix-vendor";
+          if (id.includes("node_modules/@tanstack")) return "query-vendor";
+        },
+      },
+    },
+  },
 });
