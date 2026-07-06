@@ -1,7 +1,7 @@
 ---
 name: onboarding
 description: Brings a new team member up to speed on a client project by synthesising the existing artefacts and context into a single starter brief. Use whenever someone says "onboard a new joiner", "bring someone up to speed", "starter pack for the new dev/PM", or a new person is joining an in-flight project and needs the essentials fast. Reads the project's context and artefacts and produces a one-page orientation - not a charter.
-version: 2.0.0
+version: 1.0.0
 argument-hint: <client/project + the joiner's role>
 allowed-tools: Read, Bash(ls:*), Bash(find:*), Bash(cat:clients/*)
 ---

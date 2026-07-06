@@ -1,7 +1,7 @@
 ---
 name: budget-tracker
 description: Tracks project spend against the charter budget over time and flags burn-rate risk. Use whenever someone says "track the budget", "how much have we spent", "are we on budget", "burn rate", or shares cost/effort data that needs comparing to an approved budget. Produces a budget status with spent-to-date, forecast at completion, variance, and a RAG verdict. Not a charter - the charter sets the budget; this monitors it.
-version: 2.0.0
+version: 1.0.0
 argument-hint: <approved budget + spend to date + progress>
 allowed-tools: Read
 ---

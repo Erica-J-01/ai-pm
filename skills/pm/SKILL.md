@@ -1,7 +1,7 @@
 ---
 name: pm-orchestrator
 description: PM Orchestrator - analyses any input and chains the right skills automatically. Use whenever the user pastes a raw stakeholder message, meeting transcript, feature request, Jira data, or project brief and wants Claude to decide which PM skills to run and in what order. Trigger on "/pm", "orchestrate this", "figure out what I need", or any input that is too broad or ambiguous to route to a single skill directly. This is the recommended entry point for all PM work.
-version: 2.1.0
+version: 1.0.0
 argument-hint: <any input - message, transcript, brief, or Jira data>
 allowed-tools: Read, Write
 ---

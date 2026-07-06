@@ -115,7 +115,7 @@ A dashboard and skill-fidelity patch on top of v2.4.0. No change to the CLI skil
 ### PRD intake interview protocol
 
 1. `skills/prd/intake.md` - new 10-question intake interview run before every PRD or BRD. Questions are asked one at a time. Six conditional questions trigger only when their signal is detected in the input (`no-discovery`, `stale-input`, `regulated`, `no-out-of-scope`, `integration-heavy`, `locale-specific`). Q10 (open risks and gaps) is the gate, so no PRD is generated until it has been answered.
-2. `skills/prd/SKILL.md` updated to `version: 3.1.0`. Restructured into seven numbered steps: intake interview → confirm feature areas → translate source material into requirements → requirement quality rules → error state enumeration → coverage check → output. The old "What to Gather First" table and flat instruction block are replaced by this stepped workflow.
+2. `skills/prd/SKILL.md` restructured into seven numbered steps: intake interview → confirm feature areas → translate source material into requirements → requirement quality rules → error state enumeration → coverage check → output. The old "What to Gather First" table and flat instruction block are replaced by this stepped workflow.
 3. Requirements quality rules were tightened. Each functional requirement covers one observable behaviour, adjectives need numbers, error states are their own FRs, and no FR contains TBD. A smell-check list catches copy-pasted deliverables, vague error messages, duplicate FRs, and misplaced process rules.
 4. Coverage check added (Step 6): verifies that performance, security, accessibility, availability, data retention, account deletion, audit logging, API rate limiting, session management, browser/device support, and localisation are each placed in an NFR row, a constraint, or an explicit out-of-scope entry - never silently omitted.
 5. Scope Changes section added to the output template: any item the intake interview surfaces that contradicts or extends the source document is logged explicitly as a numbered change with before/after and a confirmation owner.
@@ -128,7 +128,7 @@ A dashboard and skill-fidelity patch on top of v2.4.0. No change to the CLI skil
 ### Risk-scan pre-scan interview protocol
 
 1. `skills/risk-scan/intake.md` - new structured 13-question interview protocol run before every risk analysis. Questions are asked one at a time. Conditional questions trigger only when their signal (date gap, named dependencies, explicit risks, T&M model, multi-phase scope, team composition, compliance requirements, tight timeline, third-party integrations, or ambiguous phase) is detected in the input. The interview gates analysis, so no output is generated until Q13 (the open risk question) has been answered.
-2. `SKILL.md` updated to `version: 3.2.0`. Step 1 now reads `intake.md` and enforces the interview. The old "What to Gather" table is replaced with four rules (one question at a time, scan for signals, no skipping, and gate on Q13).
+2. `SKILL.md` updated so Step 1 now reads `intake.md` and enforces the interview. The old "What to Gather" table is replaced with four rules (one question at a time, scan for signals, no skipping, and gate on Q13).
 3. Output quality rules were tightened. Top-risks detail no longer restates register scores, the stakeholder summary is explicitly a synthesised paragraph rather than a risk re-list, and a new no-repetition rule across sections is enforced.
 
 ### Dashboard sample data enrichment

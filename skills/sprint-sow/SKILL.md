@@ -1,7 +1,7 @@
 ---
 name: sprint-sow
 description: Generates a Sprint Scope of Work (SOW) document in the exact format used by the team - with Sprint Goal, Overview, Timeline, Team table, Deliverables by Theme (each with a ticket table), Out of Scope list, and Definition of Done checklist. Use this skill whenever the user asks to create, draft, or update a sprint SOW, scope of work document, or sprint planning document. Trigger even if they say "write up the sprint", "create the SOW", or "document this sprint".
-version: 2.0.0
+version: 1.0.0
 argument-hint: <sprint goal, dates, team, and ticket list>
 allowed-tools: Read, mcp__claude_ai_Atlassian_Rovo__createConfluencePage, mcp__claude_ai_Google_Drive__create_file, mcp__claude_ai_Notion__notion-create-pages
 ---

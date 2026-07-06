@@ -1,7 +1,7 @@
 ---
 name: new-client
 description: Scaffolds a new client and/or project workspace under clients/ using the nested client → project model. Use whenever someone says "set up a new client", "new project", "scaffold ACME", "add a project for an existing client", or is starting work that needs its own isolated folder, context, and artefact directories. Creates a shared client.md (relationship-level facts) and a per-project context.md (engagement state) so multiple projects can be isolated yet linked under one client.
-version: 2.0.0
+version: 1.0.0
 argument-hint: <CLIENT> [PROJECT]
 allowed-tools: Read, Bash(mkdir:*), Bash(ls:*), Bash(find:*), Write
 ---
