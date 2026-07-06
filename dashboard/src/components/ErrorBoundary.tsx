@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { reportError } from "@/lib/telemetry";
 
 interface Props { children: ReactNode }
 interface State { error: Error | null }
@@ -12,8 +13,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // eslint-disable-next-line no-console
-    console.error("Dashboard error:", error, info.componentStack);
+    reportError(error, { source: "react", componentStack: info.componentStack });
   }
 
   render() {

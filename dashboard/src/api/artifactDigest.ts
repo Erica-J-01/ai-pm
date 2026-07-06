@@ -12,7 +12,7 @@ export function intakeAnswersContext(skill: SkillId, answers: Record<string, str
   const a = answers ?? {};
   const lines = (INTAKE_QUESTIONS[skill] ?? [])
     .filter((q) => a[q.id]?.trim())
-    .map((q) => `- ${q.title}: ${a[q.id].trim()}`);
+    .map((q) => `- ${q.title}: ${a[q.id]?.trim() ?? ""}`);
   return lines.length ? `## Intake interview answers\n\n${lines.join("\n")}` : "";
 }
 

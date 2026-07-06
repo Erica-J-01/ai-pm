@@ -209,10 +209,12 @@ export interface SkillExecution<TPayload extends ArtifactPayload = ArtifactPaylo
   id: string;
   request: SkillExecutionRequest;
   status: ExecutionStatus;
-  /** Raw markdown (always present) for TipTap editing + fallback rendering. */
+  /** Raw markdown (always present) for the markdown renderer and as an edit/fallback source. */
   markdown: string;
   /** Parsed, typed structure for visual rendering (charts, grids, banners). */
   payload?: TPayload;
+  /** True when the model hit the output-token limit and the artefact was cut off. */
+  truncated?: boolean;
   error?: { message: string; recoverable: boolean };
   startedAt?: string;
   completedAt?: string;

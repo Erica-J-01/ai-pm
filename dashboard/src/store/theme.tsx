@@ -9,13 +9,23 @@ const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const saved = typeof localStorage !== "undefined" ? localStorage.getItem("theme") : null;
-    return saved === "dark" ? "dark" : "light";
+    // Reading localStorage can throw a SecurityError in privacy-hardened browsers
+    // and sandboxed iframes even when the object exists, so guard it - an
+    // unguarded throw here crashes the whole app at boot into the ErrorBoundary.
+    try {
+      return localStorage.getItem("theme") === "dark" ? "dark" : "light";
+    } catch {
+      return "light";
+    }
   });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("theme", theme);
+    try {
+      localStorage.setItem("theme", theme);
+    } catch {
+      /* storage blocked - theme still applies for this session */
+    }
   }, [theme]);
 
   return (

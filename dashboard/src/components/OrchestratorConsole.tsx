@@ -11,7 +11,7 @@ import {
   type SkillId,
 } from "@/types/pm";
 import { type OrchestratorApi } from "@/api/orchestrator";
-import { getClaudeApiKey } from "@/api";
+import { liveClaudeAvailable } from "@/api";
 import { detectIntakeSignals } from "@/api/claudeOrchestrator";
 import { buildChainContext, intakeAnswersContext } from "@/api/artifactDigest";
 import { INTAKE_QUESTIONS, type IntakeQuestion } from "@/api/intakeQuestions";
@@ -19,6 +19,7 @@ import { IntakeInterview } from "@/components/IntakeInterview";
 import { downstreamOf } from "@/data/skillChain";
 import { skillTitle } from "@/data/demo";
 import { cn } from "@/lib/utils";
+import { reportError, trackEvent } from "@/lib/telemetry";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -91,8 +92,12 @@ function planReducer(state: PlanState, action: PlanAction): PlanState {
 
 async function extractPdfText(file: File): Promise<string> {
   const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
-  // Point the worker at the bundled worker file via CDN to avoid complex bundling
-  GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${(await import("pdfjs-dist")).version}/build/pdf.worker.min.mjs`;
+  // Load the worker as a bundled, same-origin asset (Vite emits a hashed file).
+  // A cross-origin CDN worker is blocked by the production CSP (worker-src 'self')
+  // on the deployed build, which silently breaks PDF ingestion. Keeping the import
+  // dynamic preserves the pdfjs code-split.
+  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  GlobalWorkerOptions.workerSrc = workerUrl;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await getDocument({ data: arrayBuffer }).promise;
@@ -114,6 +119,7 @@ export function OrchestratorConsole({
   const [dragging, setDragging] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
   const [{ plan }, dispatch] = useReducer(planReducer, { plan: null });
   const [completing, setCompleting] = useState(false);
   const [completingStep, setCompletingStep] = useState<string | null>(null);
@@ -138,12 +144,15 @@ export function OrchestratorConsole({
   const [highlightMissing, setHighlightMissing] = useState<SkillId[]>([]);
   // Artefacts generated so far this run, for chaining context across steps.
   const execAccRef = useRef<Partial<Record<SkillId, SkillExecution>>>({});
+  // In-flight live-run request, so it can be aborted on unmount / project switch.
+  const runAbortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // When the active project changes, reset ALL per-project state so a new
   // project always starts with a blank console - not with the previous
   // project's input or the demo pre-fill.
   useEffect(() => {
+    runAbortRef.current?.abort(); // stop any live run from the previous project
     dispatch({ type: "reset" });
     setCompleted(false);
     setRerun(false);
@@ -163,11 +172,14 @@ export function OrchestratorConsole({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
+  // Abort any in-flight live run when the console unmounts.
+  useEffect(() => () => runAbortRef.current?.abort(), []);
+
   // On opening an intake, ask Claude which conditional questions apply (live only).
   // Stub / no key / failure falls back to showing all (detectedFor stays unset).
   useEffect(() => {
     const skill = intakeOpenFor;
-    if (!skill || detectedFor[skill] || !getClaudeApiKey()) return;
+    if (!skill || detectedFor[skill] || !liveClaudeAvailable()) return;
     const conditionals = (INTAKE_QUESTIONS[skill] ?? []).filter((q) => q.conditional);
     if (conditionals.length === 0) { setDetectedFor((m) => ({ ...m, [skill]: [] })); return; }
     let cancelled = false;
@@ -202,6 +214,7 @@ export function OrchestratorConsole({
     const pdfs = files.filter((f) => f.type === "application/pdf");
     const others = files.filter((f) => f.type !== "application/pdf");
     setAttachments((prev) => [...prev, ...others]);
+    setExtractError(null);
 
     for (const pdf of pdfs) {
       setExtracting(true);
@@ -214,8 +227,10 @@ export function OrchestratorConsole({
         });
         setAttachments((prev) => [...prev, pdf]);
       } catch (e) {
+        // Surface the failure instead of adding a chip that looks like success:
+        // orchestrating on silently-empty input is worse than a visible error.
         console.error("PDF extraction failed:", e);
-        setAttachments((prev) => [...prev, pdf]);
+        setExtractError(`Could not read "${pdf.name}". Paste its text directly, or try another file.`);
       } finally {
         setExtracting(false);
       }
@@ -361,23 +376,40 @@ export function OrchestratorConsole({
     setCompletionError(null);
     execAccRef.current = {};
 
+    let failure: string | null = null;
     for (const step of approvedSteps()) {
       setCompletingStep(skillTitle(step.skill));
       const ctrl = new AbortController();
+      runAbortRef.current = ctrl;
       try {
         const execution = await api.streamStep(plan.id, step, () => {}, ctrl.signal, contextFor(step.skill));
         execAccRef.current[step.skill] = execution;
         snapshotIntake(step.skill);
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (!completionError) setCompletionError(msg);
+        // A user/unmount abort just stops quietly, no error and no partial save.
+        if (ctrl.signal.aborted) { runAbortRef.current = null; setCompletingStep(null); setCompleting(false); return; }
+        // A real failure stops the chain: downstream steps would derive from
+        // missing upstream context yet be presented as if generated normally.
+        reportError(e, { source: "orchestration.runAll", skill: step.skill });
+        trackEvent("orchestration.step_failed", { skill: step.skill });
+        failure = `${skillTitle(step.skill)} - ${e instanceof Error ? e.message : String(e)}`;
+        break;
       }
     }
-
+    runAbortRef.current = null;
     setCompletingStep(null);
+
+    if (failure) {
+      // Do not report completion or seed the failed/unrun steps with stub data.
+      setCompletionError(`Orchestration stopped at ${failure}. Nothing was saved - fix the issue and run again.`);
+      setCompleting(false);
+      return;
+    }
+
     recordViz();
     const acc = execAccRef.current;
     onComplete?.(decisionsFor(), Object.keys(acc).length > 0 ? acc : undefined);
+    trackEvent("orchestration.completed", { steps: approvedSteps().length });
     setCompleting(false);
     setCompleted(true);
   };
@@ -403,7 +435,7 @@ export function OrchestratorConsole({
   /** Run all: live if a Claude key exists, otherwise offer stub mode. */
   const runAll = async () => {
     if (!plan || blockedByIntake()) return;
-    if (!getClaudeApiKey()) { setStubPrompt(true); return; }
+    if (!liveClaudeAvailable()) { setStubPrompt(true); return; }
     await runLive();
   };
 
@@ -536,6 +568,10 @@ export function OrchestratorConsole({
 
         {extracting && (
           <p className="mt-1 text-xs text-muted-foreground animate-pulse">Extracting PDF text…</p>
+        )}
+
+        {extractError && (
+          <p className="mt-1 text-xs text-status-danger">{extractError}</p>
         )}
 
         {attachments.length > 0 && (

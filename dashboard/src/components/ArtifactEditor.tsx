@@ -29,9 +29,12 @@ export function ArtifactEditor({ skill }: { skill: SkillId }) {
   // Artifact shown before editing began - restored on Cancel.
   const prevRef = useRef(ws.current);
 
-  // Live preview to the canvas as the form changes.
+  // Live preview to the canvas as the form changes. Debounced so a full artifact
+  // rebuild + app-wide store update does not fire on every keystroke.
   useEffect(() => {
-    if (step) ws.showExecution(buildExecution(step, values, cid, pid));
+    if (!step) return;
+    const t = setTimeout(() => ws.showExecution(buildExecution(step, values, cid, pid)), 200);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values]);
 

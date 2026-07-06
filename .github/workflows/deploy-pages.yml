@@ -38,6 +38,10 @@ jobs:
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
       - run: npm ci
+      # Gate the deploy on the same checks as local `npm run build`: type errors
+      # and failing tests must never reach the public site.
+      - run: npx tsc -b
+      - run: npx vitest run
       # Build with Vite/esbuild; base must match the project-pages sub-path.
       - run: npx vite build --base=/ai-pm-erica/
       - uses: actions/configure-pages@v5

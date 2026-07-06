@@ -12,6 +12,10 @@ import { testConfluenceConnection } from "@/lib/confluencePublish";
 import { cn } from "@/lib/utils";
 import type { McpConnector } from "@/types/pm";
 
+// Live orchestration needs the dev-server proxy, which a production/Pages build
+// does not have. Gate the key entry so a deployed demo never stores or sends one.
+const IS_DEV = import.meta.env.DEV;
+
 export function ConnectorsDialog({
   open, onOpenChange,
 }: {
@@ -83,28 +87,34 @@ function ClaudeRow({ connector: c }: { connector: McpConnector }) {
             <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", dot)} />
             {c.label}
             <span className="text-xs font-normal text-muted-foreground">
-              {connected ? "live Claude orchestration" : "demo mode - add a key to go live"}
+              {!IS_DEV ? "available in local development only" : connected ? "live Claude orchestration" : "demo mode - add a key to go live"}
             </span>
           </span>
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
-            {connected ? "Edit API key" : "Add API key"}
-          </button>
+          {IS_DEV ? (
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+              {connected ? "Edit API key" : "Add API key"}
+            </button>
+          ) : (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              This deployed demo uses sample data. Run the app locally to connect your Anthropic key and generate live artefacts.
+            </p>
+          )}
         </div>
-        {connected ? (
+        {IS_DEV && (connected ? (
           <Button size="sm" className="bg-red-500 text-white hover:bg-red-600" onClick={remove}>Remove</Button>
         ) : (
           <Button size="sm" className="bg-emerald-500 text-white hover:bg-emerald-600" onClick={() => setOpen(true)}>
             Add key
           </Button>
-        )}
+        ))}
       </div>
 
-      {open && (
+      {IS_DEV && open && (
         <div className="mt-3 space-y-3 border-t border-border pt-3">
           <div className="space-y-1.5">
             <Label htmlFor="claude-api-key" className="text-xs">Anthropic API key</Label>
