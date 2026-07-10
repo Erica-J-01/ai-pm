@@ -89,6 +89,15 @@ export const INTAKE_QUESTIONS: Record<string, IntakeQuestion[]> = {
       "gate": false
     },
     {
+      "id": "Q5c",
+      "title": "Integration Readiness",
+      "prompt": "The input names several integrations: [list them]. Quick-fire, for each one in a single reply:",
+      "suggested": [],
+      "conditional": true,
+      "condition": "ask if: `integration-heavy` signal detected",
+      "gate": false
+    },
+    {
       "id": "Q6",
       "title": "Scope Boundaries",
       "prompt": "Are there features or capabilities that are definitely not in scope for this phase - things that might come up but should be parked for later?",
@@ -236,14 +245,8 @@ export const INTAKE_QUESTIONS: Record<string, IntakeQuestion[]> = {
     {
       "id": "Q5",
       "title": "External Dependency Status",
-      "prompt": "The document names [dependency name] as a dependency. What's the current status?",
-      "suggested": [
-        "Resolved - access / approval confirmed",
-        "In progress - actively being worked, expected by [date]",
-        "Blocked - no progress, no clear resolution date",
-        "Not yet started",
-        "Unknown - I'll need to check"
-      ],
+      "prompt": "The document names these dependencies: [list them]. For each one, what's the current status?",
+      "suggested": [],
       "conditional": true,
       "condition": "ask if: named external dependencies detected",
       "gate": false
@@ -326,14 +329,8 @@ export const INTAKE_QUESTIONS: Record<string, IntakeQuestion[]> = {
     {
       "id": "Q11",
       "title": "Integration Status",
-      "prompt": "What is the current status of the [integration name] integration?",
-      "suggested": [
-        "Complete - integrated and tested end-to-end",
-        "In progress - being built or tested now",
-        "Not started - not yet begun",
-        "Blocked - waiting on access, credentials, or a third party",
-        "Descoped - no longer in plan"
-      ],
+      "prompt": "These integrations are named: [list them]. What is the current status of each?",
+      "suggested": [],
       "conditional": true,
       "condition": "ask if: third-party integrations detected",
       "gate": false

@@ -1,6 +1,6 @@
 # Reference - release-checklist
 
-Use this to calibrate output quality - especially for verdict scoring, handling partial information, and writing clear blocker summaries.
+Use this to calibrate output quality - especially for verdict scoring, handling partial information, writing clear blocker summaries, building the confirmation chase list, and framing the path to GO.
 
 ---
 
@@ -80,6 +80,9 @@ Use this to calibrate output quality - especially for verdict scoring, handling 
 | O5 | Database rollback confirmed | UNCONFIRMED | Not mentioned - confirm with Marcus |
 | O6 | On-call confirmed for release window + 24 hours | UNCONFIRMED | Not confirmed |
 | O7 | Infrastructure scaled for increased load | FAIL | Background jobs could spike CPU - no load testing, no confirmation of scaling |
+| O8 | Release window sane | RISK | Friday 6:00 PM release ahead of a weekend - auto-flagged. On-call coverage (O6) is unconfirmed, so the window is not justified |
+| O9 | Deploy owner named | UNCONFIRMED | Not stated - who pushes the button? Likely Tom W, confirm |
+| O10 | Deploy sequence agreed | UNCONFIRMED | Background job config must go out before code (see D4) - order not confirmed |
 
 #### 4. Communications
 
@@ -129,13 +132,13 @@ Use this to calibrate output quality - especially for verdict scoring, handling 
 | Category | PASS | FAIL | RISK | UNCONFIRMED | N/A |
 |---|---|---|---|---|---|
 | Feature Readiness | 0 | 2 | 0 | 3 | 1 |
-| Testing | 0 | 3 | 1 | 3 | 0 |
-| Operational Readiness | 0 | 3 | 1 | 3 | 0 |
+| Testing | 0 | 2 | 1 | 4 | 0 |
+| Operational Readiness | 0 | 2 | 2 | 6 | 0 |
 | Communications | 0 | 0 | 1 | 4 | 1 |
 | Dependencies | 0 | 0 | 0 | 4 | 1 |
-| Approvals | 1 | 3 | 0 | 2 | 0 |
+| Approvals | 1 | 2 | 0 | 3 | 0 |
 | Post-Release Readiness | 0 | 0 | 0 | 4 | 0 |
-| **Total** | **1** | **11** | **3** | **23** | **3** |
+| **Total** | **1** | **8** | **4** | **28** | **3** |
 
 ---
 
@@ -153,8 +156,61 @@ Items that must be resolved before this release can proceed.
 
 ---
 
+### Confirmation chase list
+
+Every UNCONFIRMED item, grouped by who can answer it. Work this list the day before the meeting.
+
+**Marcus R - tech lead**
+- F3 - is the code merged to the release branch and is the build passing? (minutes - a CI check)
+- F4 - are feature flags configured for invoice scheduling and webhooks?
+- F5 - are the database migrations reviewed and reversible?
+- T1 - are unit and integration tests passing in CI? (minutes)
+- O5 - can the database be rolled back if the release is reverted?
+- D1 - does this release depend on any third-party payment APIs, and are they operational?
+- D3 - are there cross-team dependencies, and have they signed off?
+- A2 - his sign-off, once the items above are answered
+
+**Priya S - QA lead**
+- T3 - has the regression suite run against the release candidate?
+- T7 - is staging validation complete?
+
+**Tom W - DevOps**
+- O1 - is background job monitoring in place for invoice scheduling?
+- O2 - are error rate and latency baselines documented?
+- O6 - is on-call confirmed for the release window plus 24 hours?
+- O9 - is he the named deploy owner?
+- O10 - what is the deploy order for background job config vs code?
+- D4 - are env vars and background job config deployed to prod?
+- D5 - are any infrastructure changes pre-staged?
+- P2 - are the 30 min / 2 hr / 24 hr monitoring checks scheduled?
+
+**Erica J - PM (own actions)**
+- T6 - book the security review *(lead time: days - tied to the legal gap at A5, start today)*
+- A6 - security sign-off follows that review *(lead time: days)*
+- C6 - chase marketing review of the customer comms draft *(lead time: allow a day or two)*
+- C1 - write and share internal release notes
+- C2 - brief the support team on the invoicing changes
+- C5 - notify stakeholders and the sponsor of the release date
+- A4 - confirm whether sponsor sign-off is required for this release
+- P1 - define success metrics for Invoicing v2
+- P3 - schedule the post-release review
+- P4 - ticket known issues and deferred items
+
+Answer these here and I'll update the statuses and the verdict.
+
+---
+
 ### Verdict
 
 > **NO-GO**
 
-This release has 11 FAIL items and 23 UNCONFIRMED items. The release is not ready to ship on Friday 30 May. The two critical paths are: (1) QA sign-off on FIN-443 and FIN-461 must be completed, and (2) legal must be consulted on payment data storage before code goes to production. Recommend a 48-hour hold to resolve the blockers - reschedule to Monday 2 June 2026 at the earliest, pending blocker resolution.
+This release has 8 FAIL items and 28 UNCONFIRMED items. The release is not ready to ship on Friday 30 May - and a Friday 6:00 PM window ahead of a weekend is itself flagged at O8. The two critical paths are: (1) QA sign-off on FIN-443 and FIN-461 must be completed, and (2) legal must be consulted on payment data storage before code goes to production. Recommend rescheduling to Monday 2 June 2026 at the earliest, pending blocker resolution - moving off the Friday evening window also clears the O8 flag.
+
+---
+
+### Path to GO
+
+- **Resolvable before Friday:** O4 (rollback review) and the Marcus confirmations are hours of work. QA on FIN-443 and FIN-461 may land in time but is not guaranteed. Legal review (A5) and load testing (T5, O7) are lead-time items - unlikely by Friday.
+- **Descope options:** FIN-443 and FIN-461 are the only incomplete features. Pull both from the release, or ship them dark behind a disabled flag, and F1, F2, T2, and A3 clear. Record the deferral in P4.
+- **Reduced release:** FIN-441 and FIN-442 (recurring invoicing core), FIN-451 (PDF export), FIN-470 (rounding fix).
+- **Verdict under reduced scope:** Still NO-GO. Legal (A5), the rollback review (O4), and load testing (T5, O7) block any scope - recurring invoicing still runs background jobs and touches payment data. Descoping shortens the critical path, but Monday 2 June holds.

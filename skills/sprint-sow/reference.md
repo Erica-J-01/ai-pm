@@ -34,6 +34,8 @@ Use this to calibrate output quality - especially for theme grouping, deliverabl
 
 Prepared By: [PM Name]
 Date: 2026-06-02
+Version: 1.0
+Status: Draft
 Link to the Jira Board: [PROJECT-board-url]
 
 ## Sprint Goal
@@ -59,9 +61,9 @@ Sprint 2 delivers the reporting and notification foundations of the client porta
 
 | Team Member | Role | Assigned Tickets |
 | --- | --- | --- |
-| Priya Sharma | Frontend Engineer | [PROJECT-44](url), [PROJECT-51](url) |
-| Tom Ellis | Backend Engineer | [PROJECT-45](url), [PROJECT-46](url), [PROJECT-52](url) |
-| Mia Chen | QA Engineer | [PROJECT-53](url) |
+| Priya Sharma | Frontend Engineer | PROJECT-44, PROJECT-51 |
+| Tom Ellis | Backend Engineer | PROJECT-45, PROJECT-46, PROJECT-52 |
+| Mia Chen | QA Engineer | PROJECT-53 |
 
 ---
 
@@ -73,9 +75,9 @@ Enables finance admins to export monthly transaction data without raising a manu
 
 | Ticket | Deliverable | Description | Assignee |
 | --- | --- | --- | --- |
-| [PROJECT-44](url) | Report Export UI | Date range filter and CSV download button on the admin reports page; allows finance admins to select a month and download transaction data in one click. | Priya Sharma |
-| [PROJECT-45](url) | Report Generation API | Backend endpoint that accepts a date range and returns a formatted CSV of all transactions; consumed by the export UI. | Tom Ellis |
-| [PROJECT-46](url) | Monthly Report Scheduler | Scheduled job that automatically generates and stores the monthly report on the first of each month; removes the current manual process. | Tom Ellis |
+| PROJECT-44 | Report Export UI | Date range filter and CSV download button on the admin reports page. Allows finance admins to select a month and download transaction data in one click. | Priya Sharma |
+| PROJECT-45 | Report Generation API | Backend endpoint that accepts a date range and returns a formatted CSV of all transactions. Consumed by the export UI. | Tom Ellis |
+| PROJECT-46 | Monthly Report Scheduler | Scheduled job that automatically generates and stores the monthly report on the first of each month. Removes the current manual process. | Tom Ellis |
 
 ---
 
@@ -85,8 +87,8 @@ Keeps clients informed when new invoices are available without requiring them to
 
 | Ticket | Deliverable | Description | Assignee |
 | --- | --- | --- | --- |
-| [PROJECT-51](url) | Invoice Notification Email | Branded email template and send trigger that fires when an invoice is published to a client's account; includes invoice summary and portal link. | Priya Sharma |
-| [PROJECT-52](url) | Notification Preferences API | Backend endpoint allowing clients to opt in or out of email notifications; preference stored per account and respected by the notification trigger. | Tom Ellis |
+| PROJECT-51 | Invoice Notification Email | Branded email template and send trigger that fires when an invoice is published to a client's account. Includes invoice summary and portal link. | Priya Sharma |
+| PROJECT-52 | Notification Preferences API | Backend endpoint allowing clients to opt in or out of email notifications. Preference stored per account and respected by the notification trigger. | Tom Ellis |
 
 ---
 
@@ -96,7 +98,7 @@ End-to-end coverage across reporting and notification flows before sprint close.
 
 | Ticket | Deliverable | Description | Assignee |
 | --- | --- | --- | --- |
-| [PROJECT-53](url) | QA Test Plan & Execution | End-to-end test plan covering report generation, CSV export, email delivery, and notification opt-out; executed against staging before sprint review. | Mia Chen |
+| PROJECT-53 | QA Test Plan & Execution | End-to-end test plan covering report generation, CSV export, email delivery, and notification opt-out. Executed against staging before sprint review. | Mia Chen |
 
 ---
 
@@ -104,7 +106,7 @@ End-to-end coverage across reporting and notification flows before sprint close.
 
 The following are explicitly excluded from this sprint and will be addressed in subsequent sprints:
 
-* PDF export of monthly reports - deferred to Sprint 3 ([PROJECT-?])
+* PDF export of monthly reports - deferred to Sprint 3
 * Push notifications - deferred to Sprint 3
 * In-app notification centre - deferred to Sprint 3
 * Report filtering by category or client - not yet prioritised
@@ -126,6 +128,10 @@ Sprint 2 is considered complete when all of the following conditions are met:
 
 ---
 
+Approval: Pending
+
+---
+
 ## Why This Output Is Good
 
 **Themes are business-readable, not technical.** "Self-Service Reporting" and "Client Notifications" - not "Backend API Layer" and "Frontend Components." A sponsor reading this understands what was built.
@@ -135,3 +141,7 @@ Sprint 2 is considered complete when all of the following conditions are met:
 **Out of scope is specific.** Four named items with target sprints where known. Each one is a conversation that happened upfront rather than a surprise in Sprint 3.
 
 **Definition of Done is testable.** Every item is binary - it either passes or it doesn't. "Finance admin can filter by month and download a CSV" can be verified in two minutes. "Reporting is complete" cannot.
+
+**Ticket keys are plain text, not broken links.** The input's board URL is a placeholder, so no real link can be derived. The output writes PROJECT-44, not `[PROJECT-44](url)` - a literal `(url)` would paste into Confluence as a dead link the PM has to repair ticket by ticket. With a real base URL, each key would link as `https://<domain>/browse/PROJECT-44`.
+
+**No invented optional sections.** The input surfaced no client-side dependencies and no estimates, so there is no Dependencies & Assumptions section and no Estimate column. Version, Status, and the pending Approval line make it clear which copy of the SOW the client signed off.

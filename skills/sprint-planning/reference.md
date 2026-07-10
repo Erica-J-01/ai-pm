@@ -41,12 +41,13 @@ Use this to calibrate output quality - especially for capacity calculation, P0/P
 
 | Person | Available Days | Usable Capacity | Notes |
 |--------|---------------|-----------------|-------|
-| Alice Tan | 10 of 10 | 12 points | Full sprint, FE |
-| Ben Okafor | 9 of 10 | 11 points | 1 day PTO 6 June, BE |
-| Priya Sharma | 6 of 10 | 7 points | Part-time 3 days/week, QA |
-| **Total** | **25 days** | **30 points** | |
+| Alice Tan | 8 of 10 | 12 points | Full sprint, FE |
+| Ben Okafor | 7 of 10 | 10 points | 1 day PTO 6 June, BE |
+| Priya Sharma | 6 of 10 | 9 points | Part-time 3 days/week, QA |
+| **Total** | **21 days** | **31 points** | |
 
-> Planned at 73% of total capacity.
+> Planned at 75% of available days, converted at an assumed 2 points per usable day.
+> No velocity baseline provided - capacity is estimated, treat load % as indicative.
 
 ---
 
@@ -61,15 +62,19 @@ Use this to calibrate output quality - especially for capacity calculation, P0/P
 | P1 | PROJ-16: QA end-to-end test plan | 2 pts | Priya | PROJ-12, PROJ-13 complete |
 | P2 | PROJ-15: Email notifications | 3 pts | Ben | PROJ-13 complete |
 
-**Planned load:** 17 points | **Available capacity:** 30 points | **Load:** 57%
+**Planned load:** 14 points | **Available capacity:** 31 points | **Load:** 45%
+**Per-person load:** Alice 5 of 12 pts (42%) | Ben 7 of 10 pts (70%, 100% if PROJ-15 starts) | Priya 2 of 9 pts (22%)
+
+> Team load is comfortable, but Ben exceeds 80% the moment the PROJ-15 stretch starts. Hold PROJ-15 until PROJ-13 is done and re-check his load before pulling it in.
+> 2 of 14 committed points (PROJ-11) do not serve the sprint goal - acceptable as a small carryover fix, but named so the sponsor knows what this sprint buys.
 
 ---
 
 ### Carryover
 
-| Item | Original Sprint | Reason Not Completed | Re-committed? |
-|------|----------------|----------------------|---------------|
-| PROJ-11: Auth bug fix | Sprint 2 | Blocked - infra had not provisioned required service | Yes - blocker now resolved |
+| Item | Original Sprint | Original Estimate | Remaining Effort | Reason Not Completed | Re-committed? |
+|------|----------------|-------------------|------------------|----------------------|---------------|
+| PROJ-11: Auth bug fix | Sprint 2 | 2 pts | 2 pts - never started | Blocked - infra had not provisioned required service | Yes - blocker now resolved |
 
 ---
 
@@ -90,7 +95,7 @@ Use this to calibrate output quality - especially for capacity calculation, P0/P
 
 ---
 
-### Definition of Done
+### Definition of Done (proposed, confirm with team)
 
 Sprint 3 is complete when all of the following are true:
 
@@ -116,4 +121,5 @@ Sprint 3 is complete when all of the following are true:
 > **Leave buffer.** Plan to 70-80% capacity - interrupts will fill the rest.
 > **One sprint goal.** If you can't state it in one sentence, the sprint is unfocused.
 > **Name your stretch.** Know exactly what to cut if things run long.
-> **Carry over honestly.** If something didn't ship last sprint, understand why before re-committing it.
+> **Carry over honestly.** If something didn't ship last sprint, understand why and carry it at remaining effort before re-committing it.
+> **Check the person, not just the team.** A 45% team load still hid a Ben at 100% with stretch - compute load per owner.

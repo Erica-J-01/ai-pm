@@ -1,7 +1,7 @@
 ---
 name: release-checklist
 description: Runs a structured go/no-go assessment before a SaaS release. Evaluates release readiness across feature completeness, testing, operational readiness, communications, dependencies, and approvals. Produces a categorised checklist with a clear GO / NO-GO / CONDITIONAL GO verdict and a list of blockers the PM must resolve before shipping. Use before any production release - planned sprint delivery, hotfix, or phased rollout.
-version: 1.0.0
+version: 1.1.0
 argument-hint: <release details or Jira sprint link>
 allowed-tools: Read, mcp__claude_ai_Atlassian_Rovo__createConfluencePage, mcp__claude_ai_Atlassian_Rovo__searchJiraIssuesUsingJql, mcp__claude_ai_Atlassian_Rovo__getJiraIssue, mcp__claude_ai_Google_Drive__create_file, mcp__claude_ai_Notion__notion-create-pages, mcp__claude_ai_Gmail__create_draft
 ---
@@ -65,8 +65,9 @@ If the user provides any of the following, fetch ticket data from Jira before pr
 3. For each ticket returned, note: key, summary, status, assignee, and issue type.
 4. Use `getJiraIssue` for any ticket where more detail is needed (e.g. labels, linked issues, fix version).
 5. Summarise what was fetched before proceeding - list tickets found, their statuses, and any that are not Done or In Review.
-6. If the Jira query returns no results, tell the user and ask them to confirm the project key and sprint name.
-7. **If the Jira MCP tool is unavailable** (not connected), do not fetch or fabricate ticket data. Tell the user Jira isn't connected and switch to Option B - ask them to paste the ticket list and statuses. See *Connection Failsafe* in `.claude/CLAUDE.md`.
+6. Confirm the release scope once: ask "Is the release scope the full sprint, or a fix version / subset?" Where tickets carry a fix version, use it as the scope. Score Feature Readiness against the confirmed scope only, and record excluded or rolled-over tickets in P4 so they are not silently dropped. A sprint is not a release - deliberately rolled-over tickets must not generate false FAILs.
+7. If the Jira query returns no results, tell the user and ask them to confirm the project key and sprint name.
+8. **If the Jira MCP tool is unavailable** (not connected), do not fetch or fabricate ticket data. Tell the user Jira isn't connected and switch to Option B - ask them to paste the ticket list and statuses. See *Connection Failsafe* in `.claude/CLAUDE.md`.
 
 Tickets with status **Done** → count as completed.
 Tickets with status **In Progress**, **In Review**, **In QA**, or **Blocked** → flag as incomplete in F1 and F2.
@@ -90,8 +91,8 @@ If the user provides a Jira link plus additional context (team names, known issu
 ## 2. Categorise the Release
 Based on the release type, adjust checklist depth:
 - **Planned sprint release** - full checklist, all 7 categories
-- **Hotfix / emergency patch** - abbreviated: skip Communications if internal-only; focus on Testing, Rollback, and Approvals
-- **Phased / feature flag rollout** - add flag configuration and rollout percentage to Feature Readiness; add monitoring ramp criteria to Operational Readiness
+- **Hotfix / emergency patch** - use Hotfix Mode (see below): a 9-item checklist with its own compact table. Do not walk the full 7 categories during a live incident.
+- **Phased / feature flag rollout** - add flag configuration and rollout percentage to Feature Readiness, and add monitoring ramp criteria to Operational Readiness
 
 State the release type and any checklist adjustments before proceeding.
 
@@ -111,14 +112,17 @@ Do not mark PASS unless you have confirmation. When in doubt, mark UNCONFIRMED.
 ## 4. Score and Verdict
 After completing the checklist:
 - Count FAIL and UNCONFIRMED items
-- Any FAIL = automatic NO-GO unless the PM explicitly accepts the risk in writing
+- Any FAIL = automatic NO-GO, with one exception: the PM may accept a FAIL in writing. An accepted FAIL converts to RISK with "accepted by [name], [date]" in the item's Notes column, and the item moves from Blockers to Conditions. Suggest a `/decision-log` entry to record the acceptance.
 - UNCONFIRMED items must be resolved before a GO verdict can stand
 - RISK items do not block GO but must appear in the conditions list
+- If any items are UNCONFIRMED, build the Confirmation chase list (see Output Format): every UNCONFIRMED grouped by the person who can answer it, one line per question, lead-time-sensitive items flagged
 
 Apply the verdict:
 - **GO** - zero FAILs, zero UNCONFIRMEDs, all RISKs acknowledged
-- **NO-GO** - one or more FAILs, or critical UNCONFIRMEDs that cannot be resolved before release
-- **CONDITIONAL GO** - zero FAILs, but one or more UNCONFIRMEDs or RISKs with a clear resolution plan, owner, and deadline
+- **NO-GO** - one or more unaccepted FAILs, or critical UNCONFIRMEDs that cannot be resolved before release
+- **CONDITIONAL GO** - zero unaccepted FAILs, but one or more accepted FAILs (now RISKs), UNCONFIRMEDs, or RISKs, each with a clear resolution plan, owner, and deadline
+
+For NO-GO and CONDITIONAL GO verdicts, add a Path to GO section (see Output Format). Omit it for a clean GO.
 
 ## 5. Ask Where to Save
 After delivering the checklist and verdict, ask:
@@ -130,6 +134,15 @@ After delivering the checklist and verdict, ask:
 > 4. **Notion** - created as a new page (I'll ask for your workspace and parent page)
 > 5. **Gmail** - drafted as an email to the release team (I'll ask for recipients)
 > 6. **Clipboard only** - leave it here for you to copy manually
+
+## Re-assessment (repeat runs)
+A go/no-go is rarely run once - a NO-GO on Wednesday is usually re-run on Friday. When a prior checklist exists for the same release name or version, run in re-assessment mode:
+- Re-score every item against the new information.
+- Lead the output with a delta table: items that moved from FAIL or UNCONFIRMED to PASS, items still open, and whether the verdict changed and why.
+- Include the full checklist below the delta for the record.
+- Save with the next version suffix (`-v2`, `-v3`) per the versioning rules.
+
+The re-run meeting works off the delta in minutes, not a full re-read of every row. This is the formal counterpart to the in-session re-score offered at the end of the chase list - use re-assessment when returning to a saved checklist days later.
 
 ---
 
@@ -161,6 +174,9 @@ After delivering the checklist and verdict, ask:
 - Database rollback is possible, or data migration risk is explicitly accepted by the PM
 - On-call schedule is confirmed for the release window and the 24 hours following
 - Infrastructure has been scaled or provisioned if the release increases load
+- Release window is sane - a Friday, pre-holiday, or end-of-day window is auto-flagged RISK unless on-call coverage justifies it
+- Deploy owner is named - one person pushes the button (the runbook covers incident response, not this)
+- Deploy sequence is agreed if migrations or config changes are in scope - what goes out first: config, migration, or code
 
 ## Category 4 - Communications
 - Internal release notes are written and shared with the team
@@ -193,6 +209,26 @@ After delivering the checklist and verdict, ask:
 
 ---
 
+# Hotfix Mode
+
+A hotfix go/no-go happens during an incident, in 30 minutes, not an afternoon. Replace the 7 category tables with this single table. Same status vocabulary, same verdict rules.
+
+| # | Item | Status | Notes |
+|---|---|---|---|
+| H1 | What broke - incident and root cause stated | | |
+| H2 | What the fix changes - diff is minimal and targeted | | |
+| H3 | Fix tested - verified against the failure it fixes | | |
+| H4 | Build passing on the patch | | |
+| H5 | Rollback step confirmed and ready to execute | | |
+| H6 | Deploy owner named, deploy time agreed | | |
+| H7 | Approvals - tech lead and PM minimum | | |
+| H8 | Support briefed, customer notification decided | | |
+| H9 | Post-deploy monitoring check scheduled | | |
+
+Do not skip H8 even for internal-only fixes - a hotfix means something is already broken, so briefing support matters more than for a planned release. Keep the header block, Blockers, chase list, and Verdict sections from the standard output.
+
+---
+
 # Output Format
 
 ## Release Go / No-Go Checklist
@@ -203,6 +239,18 @@ After delivering the checklist and verdict, ask:
 **Features included:** [List or ticket references]
 **Assessed by:** [PM name]
 **Date of assessment:** [Today]
+
+---
+
+### Delta since last assessment (re-assessment runs only)
+
+| # | Item | Was | Now | What changed |
+|---|---|---|---|---|
+| [ID] | [Item] | FAIL / UNCONFIRMED | PASS / still open | [one line] |
+
+> **Verdict:** [unchanged / changed from X to Y] - [one line why]
+
+*Omit this section on a first run.*
 
 ---
 
@@ -242,6 +290,9 @@ After delivering the checklist and verdict, ask:
 | O5 | Database rollback confirmed (or risk accepted) | | |
 | O6 | On-call confirmed for release window + 24 hours | | |
 | O7 | Infrastructure scaled if load increases | | |
+| O8 | Release window sane (Friday / pre-holiday / end-of-day auto-flagged RISK) | | |
+| O9 | Deploy owner named | | |
+| O10 | Deploy sequence agreed (if migrations or config in scope) | | |
 
 #### 4. Communications
 
@@ -310,6 +361,16 @@ After delivering the checklist and verdict, ask:
 
 ---
 
+### Confirmation chase list (required when any item is UNCONFIRMED)
+> Every UNCONFIRMED item, grouped by the person who can answer it. One line per specific question. Flag lead-time-sensitive items - a legal review takes days, a CI check takes minutes.
+
+**[Name - role]**
+- [Item ID - the specific question to ask them] *(lead time: flag if the answer takes days, not minutes)*
+
+*End the section with: "Answer these here and I'll update the statuses and the verdict." This is the artefact the PM works from the day before the meeting. Omit only when the UNCONFIRMED count is zero.*
+
+---
+
 ### Conditions (CONDITIONAL GO only)
 > Items that are in progress or carry known risk. Each must have an owner and a deadline.
 
@@ -327,14 +388,29 @@ After delivering the checklist and verdict, ask:
 
 ---
 
+### Path to GO (NO-GO and CONDITIONAL GO only)
+> A decision aid, not a re-plan - keep it to a few lines.
+
+- **Resolvable before target date:** [blockers that can realistically close in time]
+- **Descope options:** [items that could be pulled from the release or left behind a disabled flag]
+- **Reduced release:** [what the release contains under the descoped scope]
+- **Verdict under reduced scope:** [does the verdict change, and why]
+
+*Omit this section for a clean GO.*
+
+---
+
 # Quality Checks
 Before delivering the output, verify:
 - Every PASS item has a confirmable basis - not assumed
 - Every FAIL item appears in the Blockers list with an owner
 - Every UNCONFIRMED item is surfaced, not silently skipped
+- Every UNCONFIRMED item appears exactly once in the Confirmation chase list, under a named person
+- Accepted FAILs carry the "accepted by [name], [date]" note, sit in Conditions not Blockers, and a `/decision-log` entry is suggested
 - The Summary table totals are correct
 - The Verdict is one of the three options - no hedging
 - CONDITIONAL GO verdicts have a Conditions section with owners and deadlines
+- NO-GO and CONDITIONAL GO outputs include a Path to GO section
 - The output is usable as a release sign-off record - not just a checklist
 
 ---
@@ -342,6 +418,6 @@ Before delivering the output, verify:
 # Style Rules
 - Be direct. PASS, FAIL, RISK, N/A, UNCONFIRMED - not "looks good", "needs checking", "TBC".
 - Surface blockers at the top of the output, not buried in the table.
-- The verdict is non-negotiable - choose one. If the PM wants to override a FAIL, they state so in writing.
+- The verdict is non-negotiable - choose one. If the PM accepts a FAIL in writing, apply the acceptance mechanic in step 4: the item converts to RISK, moves to Conditions, and the verdict becomes CONDITIONAL GO at best.
 - Treat the checklist as a handover document. Someone not in the room should be able to read it and understand the release state.
 - No padding. The checklist speaks for itself.

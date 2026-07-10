@@ -2,6 +2,12 @@
 
 Use this to calibrate output quality - especially for translating raw Jira data into plain-English PM judgements rather than restating numbers.
 
+## Calibrating Confidence and RAG
+
+- Anchor the confidence percentage to the points realistically completable in the remaining days, based on historical velocity or this sprint's throughput. Then discount for unmitigated blockers and for work that is dev-done but untested.
+- Tie the RAG status to it. Green means on plan with no high risk. Amber means recoverable slippage or one high risk. Red means the plan is not achievable without a scope or timeline change.
+- These are heuristics for producing a defensible, repeatable number - not a scoring framework.
+
 ---
 
 ## Input
@@ -28,15 +34,17 @@ Use this to calibrate output quality - especially for translating raw Jira data 
 
 # Executive Summary
 
-Sprint 12 is at significant risk of not completing to plan. Two blocked stories are holding 19% of committed points, and a QA bottleneck is building as work accumulates without being tested. With 4 days remaining, the team needs to unblock the vendor dependency today or formally defer those stories to Sprint 13.
+Sprint 12 is at significant risk of not completing to plan. The 42-point commitment was already above the team's trailing average, two blocked stories are holding 19% of committed points, and a QA bottleneck is building as work accumulates without being tested. With 4 days remaining, the team needs to unblock the vendor dependency today or formally defer those stories to Sprint 13.
 
 ---
 
 # Delivery Status
 
-- **Status:** 🔴 Red
+- **Status:** Red
 - **Sprint Confidence:** 55%
 - **Forecast:** 9-10 of 14 stories likely complete
+- **Velocity:** committed 42 vs ~38 trailing average - over-committed by roughly 10%
+- **Sprint goal:** not stated in input
 - **Risk:** High
 
 ---
@@ -75,7 +83,7 @@ Sprint 12 is at significant risk of not completing to plan. Two blocked stories 
 
 # Leadership Update
 
-Sprint 12 is tracking behind plan due to a third-party vendor dependency blocking two stories and a QA bottleneck forming in the second half of the sprint. The team is focused on unblocking these today; a scope trade-off decision may be needed by end of week to protect the sprint goal.
+Sprint 12 is tracking behind plan due to a third-party vendor dependency blocking two stories and a QA bottleneck forming in the second half of the sprint. The team is focused on unblocking these today, and a scope trade-off decision may be needed by end of week to keep the committed delivery achievable.
 
 ---
 
@@ -83,8 +91,12 @@ Sprint 12 is tracking behind plan due to a third-party vendor dependency blockin
 
 **Numbers are translated, not repeated.** "8 points blocked" becomes "19% of committed scope held by one vendor dependency." A sponsor doesn't need to know the point count - they need to know the business impact.
 
+**The over-commitment is named.** Committing 42 points against a 38/35/40 history was a roughly 10% stretch before anything went wrong. Naming it separates a planning error from an execution problem, and it answers the sponsor question "can we trust the next sprint plan?"
+
 **The QA bottleneck is named explicitly.** Raw Jira data shows QA hasn't started. The output names what will happen if that continues: testing compressed into 2 days, defect risk increases. That's a decision the PM needs to make today, not at the sprint review.
 
-**Confidence is honest.** 55% is lower than many PMs would report at the halfway point. But two blocked stories plus a scope add without trade-off makes optimism unjustified. Hiding this until Day 9 is worse than naming it on Day 6.
+**Confidence is derived, not guessed.** At the current rate of 3 points a day, roughly 30 of 42 points complete by Day 10 - and 8 of the outstanding points are blocked with no ETA, while none of the done work is tested. Anchoring to remaining throughput and then discounting for the blocker and the untested work lands at 55%, a number the PM can defend if it moves next week. Hiding this until Day 9 is worse than naming it on Day 6.
+
+**The sprint goal gap is surfaced, not papered over.** The input never stated a sprint goal, so the report says "not stated in input" rather than inventing one. A near-green forecast can still hide a failed goal - the demo-able stories may be exactly the ones that miss - so the absence is worth flagging.
 
 **Actions are specific and owned.** "PM to contact vendor directly" - not "escalate the blocker." A standup action with no owner is not an action.

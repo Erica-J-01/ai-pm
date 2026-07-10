@@ -1,6 +1,8 @@
 # Reference: Worked Example
 
-Shows how to handle a design/screenshot input and produce spec-driven stories with proper assumptions and open questions.
+Shows how to handle a mixed input (a screenshot plus a PRD note) and produce spec-driven stories with proper assumptions and open questions.
+
+**Format note:** the input here is mixed - a screenshot plus a PRD behaviour note. These stories test workflow behaviour (submission states, validation outcomes), so they use Format B (Given/When/Then) from `references/ac-format.md`. A pure design handoff specifying screen composition would use Format A (screen-by-screen) instead.
 
 ---
 
@@ -8,7 +10,7 @@ Shows how to handle a design/screenshot input and produce spec-driven stories wi
 
 > [Screenshot described]: Expense submission form. Fields: Amount (required), Category dropdown (required, options: Travel/Meals/Equipment/Other), Date (required, defaults to today), Description (optional, 500 char max), Receipt upload (optional, accepts JPG/PNG/PDF). Submit button. Cancel link. No validation error states visible in the design.
 
-Plus PRD note: "Employees submit expense claims. Manager must approve. Finance exports monthly."
+Plus PRD note: "FR-04: Employees submit expense claims. Manager must approve. Finance exports monthly."
 
 ---
 
@@ -33,12 +35,12 @@ Every element in the design maps to at least one scenario:
 
 **Date:** [Today] | **Author:** PM
 **Source:** Design v1.2 + PRD FR-04
-**Definition of Ready:** Story has title, statement, AC, assumptions, open questions logged
+**Definition of Ready / Done:** stated once at the end of this output - never repeated per story
 
 ---
 
 ### Epic: Expense Claim Submission
-*Employees can submit expense claims through a form; the claim enters a manager approval workflow on submission.*
+*Employees can submit expense claims through a form. The claim enters a manager approval workflow on submission.*
 
 Child stories: S-01, S-02, S-03, S-04 (spike)
 
@@ -51,9 +53,24 @@ Child stories: S-01, S-02, S-03, S-04 (spike)
 **So that** I can get reimbursed without emailing receipts manually.
 
 **Priority:** Must
-**Size:** M
-**INVEST check:** ✅ Pass
-**Linked req:** FR-04
+**Indicative Size:** 3 - PM guess, team to confirm in refinement
+**Linked Requirement:** FR-04
+
+**Dependencies**
+- Blocked by: None
+- Blocks: S-02, S-03
+
+**Feature Flag**
+- Flag name: `expense_claims`
+- Default: off
+
+**Assumptions**
+- `[assumed]` Employees can submit claims for any date in the past - no lookback limit enforced at submission. Confirm with Finance before release.
+- `[assumed]` Currency defaults to GBP. Multi-currency is out of scope unless Finance confirms otherwise.
+
+**Open Questions**
+- [ ] Are future dates allowed in the Date field? The design defaults to today but doesn't prevent future dates. | Owner: Finance team | Needed by: before Scenario 3 finalisation
+- [ ] What is the confirmation message exact wording? | Owner: Copywriter or product owner | Needed by: before build
 
 ---
 
@@ -85,17 +102,6 @@ Then the form does not submit
 and each missing required field is highlighted with an inline error message.
 ```
 
-**Assumptions**
-- `[assumed]` Employees can submit claims for any date in the past - no lookback limit enforced at submission. Confirm with Finance before release.
-- `[assumed]` Currency defaults to GBP. Multi-currency is out of scope unless Finance confirms otherwise.
-
-**Open Questions**
-- `[open]` Are future dates allowed in the Date field? The design defaults to today but doesn't prevent future dates. Finance team to confirm. Blocks S-01 Scenario 3 finalisation.
-- `[open]` What is the confirmation message exact wording? Copywriter or product owner to confirm before build.
-
-**Dependencies**
-- None - this is the entry point of the expense workflow.
-
 ---
 
 #### [S-02] Upload receipt to expense claim
@@ -105,9 +111,23 @@ and each missing required field is highlighted with an inline error message.
 **So that** my manager has the evidence they need to approve without asking me for it separately.
 
 **Priority:** Must
-**Size:** S
-**INVEST check:** ✅ Pass
-**Linked req:** FR-04
+**Indicative Size:** 2 - PM guess, team to confirm in refinement
+**Linked Requirement:** FR-04
+
+**Dependencies**
+- Blocked by: S-01 (the form must exist)
+- Blocks: None
+
+**Feature Flag**
+- Flag name: None - ships behind `expense_claims`
+- Default: n/a
+
+**Assumptions**
+- `[assumed]` Maximum file size is 5MB - industry standard for receipt uploads. IT to confirm server-side limit matches.
+- `[assumed]` Only one receipt per claim - design shows a single upload field.
+
+**Open Questions**
+- [ ] Should multiple receipts be supported (e.g. multi-day travel)? Design shows one upload only but the PRD doesn't address it. If yes, this story needs resizing. | Owner: Product owner | Needed by: refinement
 
 ---
 
@@ -138,16 +158,6 @@ When I click the remove/clear action next to the file name,
 Then the attachment is removed and the upload field returns to its empty state.
 ```
 
-**Assumptions**
-- `[assumed]` Maximum file size is 5MB - industry standard for receipt uploads. IT to confirm server-side limit matches.
-- `[assumed]` Only one receipt per claim - design shows a single upload field.
-
-**Open Questions**
-- `[open]` Should multiple receipts be supported (e.g. multi-day travel)? Design shows one upload only but PRD doesn't address it. Product owner to decide. If yes, this story needs resizing.
-
-**Dependencies**
-- Independent - can be built and tested standalone.
-
 ---
 
 #### [S-03] Cancel expense claim in progress
@@ -157,9 +167,22 @@ Then the attachment is removed and the upload field returns to its empty state.
 **So that** I don't accidentally submit incomplete or incorrect data.
 
 **Priority:** Should
-**Size:** XS
-**INVEST check:** ✅ Pass
-**Linked req:** FR-04
+**Indicative Size:** 1 - PM guess, team to confirm in refinement
+**Linked Requirement:** FR-04
+
+**Dependencies**
+- Blocked by: S-01 (the form must exist)
+- Blocks: None
+
+**Feature Flag**
+- Flag name: None - ships behind `expense_claims`
+- Default: n/a
+
+**Assumptions**
+- `[assumed]` "Previous page" means the My Claims list - confirm with designer if navigation is different.
+
+**Open Questions**
+- None - scenarios are fully defined.
 
 ---
 
@@ -188,15 +211,6 @@ When I click "Stay",
 Then the dialog closes and my entered data is preserved.
 ```
 
-**Assumptions**
-- `[assumed]` "Previous page" means the My Claims list - confirm with designer if navigation is different.
-
-**Open Questions**
-- None - scenarios are fully defined.
-
-**Dependencies**
-- Independent.
-
 ---
 
 #### [S-04] SPIKE - Investigate manager approval notification mechanism
@@ -213,12 +227,24 @@ The PRD states "manager must approve" but doesn't define how they're notified. T
 
 ### Story Summary
 
-| ID | Title | User | Priority | Size | INVEST | Source |
-|---|---|---|---|---|---|---|
-| S-01 | Submit valid expense claim | Employee | Must | M | ✅ Pass | FR-04 |
-| S-02 | Upload receipt to expense claim | Employee | Must | S | ✅ Pass | FR-04 |
-| S-03 | Cancel expense claim in progress | Employee | Should | XS | ✅ Pass | FR-04 |
-| S-04 | SPIKE: Manager notification | PM | Must | 2d | ⚠️ Not estimable yet | PRD gap |
+| ID | Title | Priority | Size | Linked Requirement |
+|---|---|---|---|---|
+| S-01 | Submit valid expense claim | Must | 3 | FR-04 |
+| S-02 | Upload receipt to expense claim | Must | 2 | FR-04 |
+| S-03 | Cancel expense claim in progress | Should | 1 | FR-04 |
+| S-04 | SPIKE: Manager notification | Must | 2d timebox | PRD gap - approval flow |
+
+*Sizes are indicative PM guesses pending team estimation.*
+
+### Coverage Check
+
+| Source requirement | Covered by |
+|---|---|
+| FR-04 submission | S-01, S-02, S-03 |
+| FR-04 manager approval | S-04 spike - approval story S-05 blocked on its outcome |
+| FR-04 finance monthly export | **Orphaned - no story yet.** Add an export story or confirm it belongs to a later epic. |
+
+**Definition of Ready / Definition of Done:** live on the team's board for this engagement - stated once here, not repeated per story.
 
 ---
 
@@ -231,5 +257,9 @@ The PRD states "manager must approve" but doesn't define how they're notified. T
 **S-04 is a spike, not a story.** The 2-day vs 2-week estimate gap is a real signal: the team doesn't know enough to build it. Writing stories on top of this uncertainty produces waste. The spike produces the decision that unblocks the story.
 
 **Assumptions and open questions are separated.** The 5MB limit is an assumption - the team can proceed with it and it's a reasonable default. The future-date question is genuinely open - the answer changes a scenario in S-01 and needs an external decision. Treating them the same creates confusion about what the team can proceed with.
+
+**Sizes are labelled as guesses.** The team, not the PM, owns the estimate. An unlabelled number anchors planning and gets challenged in the first refinement session.
+
+**The coverage check caught a gap.** "Finance exports monthly" is in the PRD but no story covers it. Without the check, that gap surfaces at sign-off or, worse, at month end in production.
 
 **Error messages are specific.** "Only JPG, PNG, and PDF files are accepted" - not "invalid file type error shown." A developer reading the latter would make up the copy. A tester reading the former can verify it exactly.
