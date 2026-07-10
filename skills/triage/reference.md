@@ -2,12 +2,15 @@
 
 This file contains reference material to support the skill defined in SKILL.md.
 Claude reads this file only when additional examples or context are needed.
+The classification table and routing live in SKILL.md.
 
 ---
 
 ## Worked Example
 
 ### Input (Raw Stakeholder Message)
+> Slack DM from Priya (client account manager), received 9 July:
+>
 > "Hey, the CEO wants the onboarding fixed. Customers are complaining it's too slow and confusing. Can we get something done by end of month? Also maybe add a progress bar. Let me know."
 
 ---
@@ -15,6 +18,9 @@ Claude reads this file only when additional examples or context are needed.
 ### Output
 
 ## Requirement Intake Summary
+
+**Requester & Source:**
+Priya, client account manager, via Slack DM on 9 July. She is relaying the ask - the CEO is the cited authority, not the sender.
 
 **Request Summary:**
 The CEO wants the customer onboarding flow improved for speed and clarity, with a potential progress bar addition, by end of month.
@@ -29,16 +35,15 @@ New customers are struggling to complete onboarding - likely leading to drop-off
 - There is an existing onboarding flow with known user complaints
 - Speed and confusion are the two cited problems
 - A progress bar has been suggested as a possible solution
-- End-of-month is the stated deadline
 
 **Missing Information:**
-- What specific steps in onboarding are causing drop-off or confusion?
-- What does "slow" mean - technically slow (load times) or cognitively slow (too many steps)?
-- How many customers are affected and how is this being measured?
-- Who owns the current onboarding flow - product, engineering, or CX?
-- Is the progress bar a requirement or a suggestion?
-- What does success look like - completion rate, time-to-complete, CSAT?
-- Has any user research or session recording been done?
+- What specific steps in onboarding are causing drop-off or confusion? *(ask requester)*
+- What does "slow" mean - technically slow (load times) or cognitively slow (too many steps)? *(ask requester)*
+- How many customers are affected and how is this being measured? *(ask requester)*
+- Is the progress bar a requirement or a suggestion? *(ask requester)*
+- What does success look like - completion rate, time-to-complete, CSAT? *(ask requester)*
+- Who owns the current onboarding flow - product, engineering, or CX? *(check internally)*
+- Has any user research or session recording been done? *(check internally)*
 
 **Risks / Concerns:**
 - Unrealistic timeline: end-of-month may not allow for proper discovery and delivery
@@ -46,6 +51,12 @@ New customers are struggling to complete onboarding - likely leading to drop-off
 - No success metric defined - hard to know if the fix worked
 - "CEO wants it" pressure may skip necessary validation steps
 - Scope is undefined - "fix onboarding" could mean 1 screen or a full redesign
+
+**Urgency:**
+End of month stated. Reads as negotiable - phrased as "can we get something done by", with no contractual or compliance driver cited. Confirm what is behind the date.
+
+**Impact on Current Work:**
+Not checked - no project context on file for this client. If onboarding scope is already in an active SOW, re-classify as Likely Change Request.
 
 **Intake Classification:**
 Needs Clarification
@@ -68,27 +79,3 @@ Use this skill when messages resemble any of the following:
 | Ambiguous scope | "Customer asked for API integration." |
 | Workshop output | "Notes from yesterday's session - lots of ideas, nothing decided." |
 | Partial requirement | "We need something for mobile. Not sure what exactly." |
-
----
-
-## Intake Classification Guide
-
-| Classification | When to Use |
-|---|---|
-| Ready for Discovery | Problem and stakeholders are clear; missing only solution details |
-| Needs Clarification | Core ask is too vague to scope or estimate |
-| Likely Change Request | Resembles scope already in progress or delivered |
-| Needs Technical Review | Feasibility or architecture concerns block PM decisions |
-| Low Priority / Unclear Value | No clear business goal or urgency |
-| Urgent Business Request | Time-sensitive with commercial or compliance implications |
-
----
-
-## Boundaries
-
-This skill handles **intake only**. Once clarified, route to:
-- **User story writing** → dedicated story-writing skill
-- **Solution architecture** → technical design skill
-- **Sprint planning** → planning skill
-- **Estimation** → estimation skill
-- **PRD creation** → documentation skill

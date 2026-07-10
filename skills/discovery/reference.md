@@ -14,6 +14,8 @@ Two examples - one per mode. Use these to calibrate output quality.
 - Duration: 2 hours
 - Known pain: old system, people hate it - but "hate it" is not a finding, it's a signal to dig deeper
 - Unknown: what specifically is broken, what good looks like, budget/timeline expectations
+- The request arrives solution-first ("a new expense management system") - so the plan needs the solution check questions
+- Nobody who actually submits expenses is attending - flag it while the invite can still change
 
 ---
 
@@ -21,6 +23,7 @@ Two examples - one per mode. Use these to calibrate output quality.
 
 **Project:** Expense Management System | **Date:** TBC | **Duration:** 120 mins
 **Facilitator:** PM | **Attendees:** Finance team, Ops team
+**Missing voices:** No expense-submitting employee and no approving manager attending - submission pain and approval-delay findings will be second-hand
 
 ---
 
@@ -31,6 +34,11 @@ Understand what is broken about the current expense process and what the team wo
 1. What specifically causes the most pain - is it data entry, approval delays, reporting, or something else?
 2. What does the approval and reimbursement workflow actually look like today?
 3. What would "good" look like to Finance vs Ops - they may want different things
+
+#### Before the Session, Please Bring
+- Finance: number of expenses that went unclaimed or were written off last quarter
+- Finance: average cycle time from submission to reimbursement
+- Ops: how often the current system crashes or fails a submission in a typical month
 
 #### Agenda
 
@@ -54,7 +62,7 @@ Understand what is broken about the current expense process and what the team wo
 **Pain + impact:**
 - Where does the process break down most often?
 - What do employees complain about most?
-- How many expenses go unclaimed because the process is too hard? (Finance will know this)
+- Take the unclaimed-expense figure from the pre-read - why do those expenses go unclaimed? Is the process the barrier, or something else?
 - What does a bad month look like in terms of errors or delays?
 
 **Future state:**
@@ -71,6 +79,11 @@ Understand what is broken about the current expense process and what the team wo
 **For Finance lead specifically:**
 - What does a successful rollout look like in 6 months - what metric improves?
 - What's a dealbreaker for you in any new solution?
+
+**Solution check (the request arrived as "a new expense management system"):**
+- What problem does a new system solve, in your words?
+- What else was considered - fixing the current system, or process change without new software - and why was it rejected?
+- If a new system were impossible, what would you do instead?
 
 #### What to Capture
 - The exact words Finance and Ops use to describe pain - they'll be different
@@ -97,8 +110,8 @@ Understand what is broken about the current expense process and what the team wo
 
 ### DISCOVERY FINDINGS
 
-**Project:** Expense Management System | **Session date:** [Date] | **Prepared by:** PM
-**Attendees:** Anna (Finance), Tom (Ops) - separate interviews | **Session type:** 1:1 Interviews
+**Project:** Expense Management System | **Session date(s):** [Date] | **Prepared by:** PM
+**Attendees:** Anna (Finance), Tom (Ops) - separate interviews | **Session type(s):** 1:1 Interviews
 
 ---
 
@@ -152,10 +165,14 @@ There are two distinct problems, not one. Finance's pain is process - approvals 
 | Clarify mobile scope - in or out | Sponsor decision | Before requirements begin |
 | Review previous IT project - what failed and why | PM + IT lead | Before solution design |
 
+#### Readiness Verdict
+
+> **Not ready** for charter or requirements. Blocking items: budget is unconfirmed (Anna's £30k vs Tom hearing no figure), mobile scope is undecided, and managers - the named approval bottleneck - have not been interviewed. Resolve these three and the project is charter-ready.
+
 ---
 
 ## What Makes These Outputs Good
 
-**Plan:** The session goal is specific - "what the team would need to see to consider it a success" - not generic like "discuss the project." The key unknowns are actual questions, not topics. The question bank includes Finance-specific and Ops-specific questions because they have different roles and different pain.
+**Plan:** The session goal is specific - "what the team would need to see to consider it a success" - not generic like "discuss the project." The key unknowns are actual questions, not topics. The question bank includes Finance-specific and Ops-specific questions because they have different roles and different pain. The missing voices line and the bring list catch gaps while the invite and pre-read can still be fixed, and the solution check appears because the request arrived solution-first.
 
-**Summarise:** The real problem section names two distinct problems, not one. The conflicts section doesn't smooth over the budget disagreement - it escalates it. The still unknown table has 4 entries - discovery that produces zero unknowns hasn't gone deep enough. The "IT never delivered" comment is interpreted as a trust issue, not just a historical note, because that interpretation changes how the PM should manage the rollout.
+**Summarise:** The real problem section names two distinct problems, not one. The conflicts section doesn't smooth over the budget disagreement - it escalates it. The still unknown table has 4 entries - discovery that produces zero unknowns hasn't gone deep enough. The "IT never delivered" comment is interpreted as a trust issue, not just a historical note, because that interpretation changes how the PM should manage the rollout. The readiness verdict compresses all of it into one go/no-go read with the blockers named, pulled straight from the conflicts and unknowns already on the page.

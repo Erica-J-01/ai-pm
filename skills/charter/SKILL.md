@@ -1,7 +1,7 @@
 ---
 name: project-charter
 description: Turns a project brief, intake summary, or rough idea into a complete, sponsor-ready project charter. Use whenever someone says "write the charter", "start a new project", "formalise this project", "we need a charter", "draft the project document", or pastes a brief and needs it turned into an official document. Also triggers after an intake summary is complete and the next step is formal authorisation. A charter is the document that officially starts a project - without it, the PM has no authority to act and the team has no agreed scope. Use this skill early, before any planning begins.
-version: 1.0.0
+version: 1.1.0
 argument-hint: <project brief or intake summary>
 allowed-tools: Read
 ---
@@ -10,7 +10,7 @@ allowed-tools: Read
 
 $ARGUMENTS
 
-*If no input is provided above, ask: "Please share the project brief or intake summary - project name, problem, sponsor, timeline, and budget if known."*
+*If no input is provided above, check the active `clients/CLIENT/PROJECT/project-artefacts/` folder for a recent intake summary or risk scan before asking. Use the newest as the primary input, tell the user which file you used, and ask only for whichever of the five required inputs is still missing. If nothing is found, ask: "Please share the project brief or intake summary - project name, problem, sponsor, timeline, and budget if known."*
 
 ---
 
@@ -28,18 +28,22 @@ A charter needs at least these five things. If fewer than three are provided, as
 
 If the user says "just assume" - do so, mark every assumption `[assumed]`, and list them all at the bottom.
 
+Scope boundaries you derive rather than extract - typical for out-of-scope items - are proposals, not facts. Tag each one `[proposed - confirm]` and list it in the Assumptions Log alongside the `[assumed]` items. Never present an invented boundary as something the client agreed to.
+
 ---
 
 # Output Template
 
 Use this structure exactly.
 
+If a charter already exists in the active project's artefacts, do not regenerate from scratch. Read it, reissue with the version bumped, and add a one-line "Changes since vN" note under the header.
+
 ---
 
 ## PROJECT CHARTER
 
 **Project:** [Name]
-**Date:** [Today] | **Version:** 1.0
+**Date:** [Today] | **Version:** [1.0 for a new charter, or bumped when re-baselining]
 **Prepared by:** [PM name or role]
 
 ---
@@ -59,7 +63,7 @@ What success looks like - specific enough to verify:
 - [What will be delivered]
 
 **Out of scope:**
-- [What will NOT be delivered - at least 2 items]
+- [What will NOT be delivered - at least 2 items. Tag any boundary not stated in the input `[proposed - confirm]`]
 
 ### 4. Deliverables
 
@@ -75,7 +79,15 @@ What success looks like - specific enough to verify:
 | [PM] | Day-to-day delivery |
 | [Others] | [Their role] |
 
-### 6. Timeline
+### 6. Governance
+
+| Item | Detail |
+|---|---|
+| Decision authority | [Sponsor] - final call on scope, budget, and timeline |
+| Change approval | Material changes to scope, budget, or timeline need sponsor sign-off, recorded via `/decision-log` |
+| Reporting cadence | [What the sponsor receives and how often - e.g. weekly one-page status update] |
+
+### 7. Timeline
 
 | Milestone | Target Date |
 |---|---|
@@ -83,15 +95,17 @@ What success looks like - specific enough to verify:
 | [Key milestone] | [Date] |
 | Go-live / delivery | [Date] |
 
-### 7. Budget
+### 8. Budget
 
 | Item | Amount |
 |---|---|
 | Estimated delivery cost | [Amount or range] |
 | Contingency (10-15%) | [Amount] |
+| Commercial basis | [Fixed price / T&M / internal cost - tag `[assumed]` if the brief is silent] |
+| Includes / excludes | [e.g. whether licences, hosting, and third-party costs are in - tag `[assumed]` if silent] |
 | Budget owner | [Name / role] |
 
-### 8. Top Risks
+### 9. Top Risks
 
 | Risk | Likelihood | Impact | Response |
 |---|---|---|---|
@@ -99,7 +113,7 @@ What success looks like - specific enough to verify:
 
 Keep to 3 risks maximum. These are headline risks only - a full risk scan is a separate step.
 
-### 9. Constraints & Assumptions
+### 10. Constraints & Assumptions
 
 **Constraints** (fixed - cannot change):
 - [e.g. Must go live before Q4 regulatory deadline]
@@ -107,7 +121,13 @@ Keep to 3 risks maximum. These are headline risks only - a full risk scan is a s
 **Assumptions** (believed to be true - must be validated):
 - [assumed] [e.g. Dev team available from Month 1]
 
-### 10. Approvals
+**Client-side dependencies** (what the sponsor's organisation must supply - these are obligations the signature covers, not assumptions):
+
+| Dependency | Needed by | Owner |
+|---|---|---|
+| [e.g. API access to the core system] | [Date or phase] | [Client-side role] |
+
+### 11. Approvals
 
 | Role | Name | Date | Signature |
 |---|---|---|---|
@@ -118,7 +138,7 @@ Keep to 3 risks maximum. These are headline risks only - a full risk scan is a s
 ---
 
 ### Assumptions Log
-All `[assumed]` items from above - the sponsor should confirm or correct each before sign-off:
+All `[assumed]` and `[proposed - confirm]` items from above - the sponsor should confirm or correct each before sign-off:
 
 | Assumption | Why assumed | Who should confirm |
 |---|---|---|

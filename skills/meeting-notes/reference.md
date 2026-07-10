@@ -74,6 +74,7 @@ Use this to calibrate output quality - especially for stripping filler without l
 
 **MEETING MINUTES**
 
+**Title:** Q3 Roadmap Alignment
 **Date:** Not specified in transcript
 **Attendees:** Sarah Mitchell, Tom Ellis, Priya Sharma
 **Duration:** ~6 minutes
@@ -135,3 +136,7 @@ The team aligned on Q3 roadmap priorities. Three features were confirmed for Q3:
 **Open questions surface what the meeting didn't resolve.** The sales communication gap and the reporting dashboard Q4 fallback are both things the PM needs to follow up on - and neither was given a clear owner in the meeting. Flagging them is more useful than pretending they were resolved.
 
 **Follow-up questions are specific to this meeting.** "What are the enterprise deals blocked on notifications" is something only a person who read this transcript would ask. Generic follow-ups ("would you like more detail?") add no value.
+
+**The header carries a title, and the date gap gets resolved before saving.** "Q3 Roadmap Alignment" is inferred from Sarah's opening line and becomes the filename slug and page title, so two meetings on the same day never collide. Because Date is "Not specified in transcript", the skill asks for the actual meeting date before any save rather than stamping today's date on it.
+
+**The minutes trigger a decision-log offer.** The iOS-only descope is a scope change with sales expectations attached - after saving, the skill offers `/decision-log` so the decision gets an audit trail instead of living only in the minutes.

@@ -1,7 +1,7 @@
 ---
 name: retrospective
 description: Facilitates a sprint or project retrospective and turns raw retro input into a structured, action-oriented retro document. Use whenever someone says "run a retro", "sprint retrospective", "what went well / what didn't", "let's reflect on the sprint", or pastes raw retro notes that need structuring into themes and owned action items. Standalone - runs after a sprint or release, does not chain into build skills.
-version: 1.0.0
+version: 1.1.0
 argument-hint: <sprint name + retro notes, or "plan a retro">
 allowed-tools: Read
 ---
@@ -34,11 +34,19 @@ If raw notes are present, go straight to Synthesise.
 | Sprint / period | Yes | Anchors the retro |
 | Raw notes or themes | Yes (Synthesise) | What the team said |
 | Sprint metrics | No | Velocity, carryover, incidents - adds evidence |
-| Prior retro actions | No | Were last retro's actions done? |
+| Prior retro actions | No | Were last retro's actions done? Also used to spot recurring themes |
 
 ---
 
 # Mode 1 - Facilitate
+
+Pick the format for the room, not by habit:
+
+- Routine sprint: Start/Stop/Continue is the default.
+- Missed goal, incident, or visible team tension: open with a blameless timeline of what happened and consider collecting input anonymously before discussion.
+- Remote team: silent writing in a shared board before anyone speaks.
+
+Adjust the agenda below to match - do not walk into a tense room with the standard cheerful sequence.
 
 ## Output Template - Retro Plan
 
@@ -67,10 +75,17 @@ If raw notes are present, go straight to Synthesise.
 
 # Mode 2 - Synthesise
 
+Before writing the summary:
+
+- **Depersonalise.** Rewrite person-directed notes as process or system themes ("Dave broke the build twice" becomes "build broke twice - no pre-merge check"). Never attribute a comment to a named individual anywhere in the artefact. If a note is a people or conduct issue rather than a process one, exclude it and flag it to the PM as "handle 1:1, not in this document".
+- **Check prior retros.** If retro files exist for the active project (`clients/CLIENT/sprint-artefacts/*-retro.md`), read the most recent one or two. Tag any theme that also appeared there as **Recurring** in the What Didn't table. A recurring theme paired with a repeated failed action in Prior Actions Review is systemic - say so and suggest `/risk-scan` or `/decision-log`.
+- **Cap actions at 3.** Up to 5 only with a stated reason. Remaining candidates go under *Parked - revisit if it recurs* so nothing is silently dropped.
+
 ## Output Template - Retro Summary
 
 ### SPRINT RETRO - [Sprint / Period]
 **Date:** [Today] | **Attendees:** [Roles] | **Sprint outcome:** [Met / Partially met / Missed goal]
+**Sprint facts:** [Committed vs done, carryover, incidents - omit if no metrics were given]
 
 #### Prior Actions Review
 | Last Retro Action | Owner | Done? |
@@ -85,7 +100,9 @@ If raw notes are present, go straight to Synthesise.
 #### What Didn't
 | # | Theme | What happened | Impact |
 |---|---|---|---|
-| 1 | [Theme] | [Specific, blameless] | [Cost to team/delivery] |
+| 1 | [Theme - add "(Recurring)" if it appeared in a prior retro] | [Specific, blameless] | [Cost to team/delivery] |
+
+*Where a sprint fact supports a theme, cite the number in What happened or Impact.*
 
 #### Action Items
 | # | Action | Owner | By When | Addresses |
@@ -95,6 +112,10 @@ If raw notes are present, go straight to Synthesise.
 > Each action has one owner and a date. "Communicate better" is not an action - "Post the deploy plan in #releases by Wed standup" is.
 
 If the input doesn't give an owner or date for an action, do not fabricate one. Assign the most likely owner from context and mark it `[confirm at retro]`, or use `[Owner TBC]` / `[Date TBC]`, and flag that each must be set before the retro closes.
+
+If a theme is outside the team's control (client behaviour, staffing, budget), do not write it as a team-owned action with a date. Prefix the Action cell with **Escalation:**, default the owner to the PM, and point to `/stakeholder-update` or `/risk-scan` as the follow-on.
+
+*Parked - revisit if it recurs:* [remaining action candidates, one line each - omit if none]
 
 #### Sentiment
 [One line: team morale and any signal worth watching.]

@@ -53,10 +53,10 @@ Finance clients are currently requesting updates via email, creating significant
 - Basic audit trail of client report views
 
 **Out of scope:**
-- Mobile app (web browser on mobile only)
-- Integration with third-party accounting platforms
-- Real-time data feeds - reports will refresh on a scheduled basis
-- White-labelling or custom branding per client
+- Mobile app (web browser on mobile only) [proposed - confirm]
+- Integration with third-party accounting platforms [proposed - confirm]
+- Real-time data feeds - reports will refresh on a scheduled basis [proposed - confirm]
+- White-labelling or custom branding per client [proposed - confirm]
 
 ### 4. Deliverables
 
@@ -76,7 +76,15 @@ Finance clients are currently requesting updates via email, creating significant
 | PM | Day-to-day delivery, stakeholder coordination |
 | Finance clients (sample group) | UAT participants |
 
-### 6. Timeline
+### 6. Governance
+
+| Item | Detail |
+|---|---|
+| Decision authority | TBC sponsor - final call on scope, budget, and timeline |
+| Change approval | Material changes to scope, budget, or timeline need sponsor sign-off, recorded via `/decision-log` |
+| Reporting cadence | Weekly one-page status update to sponsor [proposed - confirm] |
+
+### 7. Timeline
 
 | Milestone | Target Date |
 |---|---|
@@ -86,15 +94,17 @@ Finance clients are currently requesting updates via email, creating significant
 | UAT complete | [Month 4] |
 | Go-live | [31 Dec or agreed date] |
 
-### 7. Budget
+### 8. Budget
 
 | Item | Amount |
 |---|---|
 | Estimated delivery cost | £80,000 [assumed - unconfirmed] |
 | Contingency (10%) | £8,000 |
+| Commercial basis | [assumed] Internal cost - the brief does not say fixed price or T&M |
+| Includes / excludes | [assumed] Excludes software licences, hosting, and third-party costs |
 | Budget owner | TBC - confirm with sponsor |
 
-### 8. Top Risks
+### 9. Top Risks
 
 | Risk | Likelihood | Impact | Response |
 |---|---|---|---|
@@ -102,7 +112,7 @@ Finance clients are currently requesting updates via email, creating significant
 | No named sponsor means decisions stall and the project loses authority | H | H | Escalate - sponsor must be identified before kickoff |
 | "End of year" deadline is fixed but scope has not been validated against timeline | M | H | Mitigate - run a scoping session in Week 1 to confirm feasibility |
 
-### 9. Constraints & Assumptions
+### 10. Constraints & Assumptions
 
 **Constraints:**
 - Delivery must be complete by end of calendar year
@@ -111,10 +121,15 @@ Finance clients are currently requesting updates via email, creating significant
 **Assumptions:**
 - [assumed] Project name is "Client Reporting Portal" - confirm with sponsor
 - [assumed] Budget is approximately £80k - input described this as unconfirmed
-- [assumed] Sarah's IT team has capacity to deliver - "said she can help" is not a formal commitment
 - [assumed] Sponsor exists but was not named - project cannot proceed without one
 
-### 10. Approvals
+**Client-side dependencies:**
+
+| Dependency | Needed by | Owner |
+|---|---|---|
+| IT team resource for build and infrastructure | Project start | Sarah / IT Director [assumed - informal offer, needs formal commitment] |
+
+### 11. Approvals
 
 | Role | Name | Date | Signature |
 |---|---|---|---|
@@ -129,7 +144,11 @@ Finance clients are currently requesting updates via email, creating significant
 |---|---|---|
 | Project name: "Client Reporting Portal" | Not stated in brief | Sponsor |
 | Budget ~£80k | Stated as approximate and unconfirmed | Finance / Sponsor |
-| IT team availability | Informal offer only - not a commitment | Sarah's manager / IT Director |
+| Commercial basis: internal cost | Not stated in brief | Sponsor / Finance |
+| Budget excludes licences, hosting, third-party costs | Not stated in brief | Sponsor / Finance |
+| Out of scope: mobile app, accounting integrations, real-time feeds, white-labelling | Proposed boundaries - none were stated in the brief | Sponsor |
+| Reporting cadence: weekly update to sponsor | Proposed - not discussed in the brief | Sponsor |
+| IT team capacity from project start | Informal offer only - not a commitment | Sarah's manager / IT Director |
 | Sponsor exists but unnamed | Projects require a named budget owner | Requesting stakeholder |
 
 ---
@@ -138,7 +157,9 @@ Finance clients are currently requesting updates via email, creating significant
 
 **The purpose section focuses on the problem, not the solution.** "Email volume is high" is the problem. "Portal" is the solution. The purpose section names the pain first, then explains what the project does about it. A sponsor reading this immediately understands why this project exists.
 
-**Out of scope has 4 named items.** "Mobile app", "third-party integrations", "real-time feeds", "white-labelling" - these aren't obvious, but naming them prevents scope creep later. Every out-of-scope item is a conversation that happened upfront rather than a surprise mid-build.
+**Out of scope proposes 4 boundaries and tags every one.** The brief never mentioned mobile, integrations, real-time feeds, or white-labelling, so each carries `[proposed - confirm]` and appears in the Assumptions Log. They still prevent scope creep, but the sponsor confirms them at sign-off instead of discovering in month three that the charter quietly excluded the thing they wanted.
+
+**Sarah's team is an obligation, not an assumption.** "Said she can help" started as an assumption, but the build depends on it, so it sits in Client-side dependencies with a needed-by date and an owner. The sponsor's signature now covers what their own organisation must supply - no "you never told us" two weeks in.
 
 **The missing sponsor is the top 2 risks.** The brief mentioned Sarah from IT - that's a resource, not a sponsor. An experienced PM spots this immediately. The risk log flags it as High/High and escalates it, because a project without a named sponsor has no authority to spend the budget or make decisions.
 

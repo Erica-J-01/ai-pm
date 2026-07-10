@@ -1,7 +1,7 @@
 ---
 name: prd
 description: 'Writes a Product Requirements Document (PRD) or Business Requirements Document (BRD) from discovery findings, a project brief, or raw stakeholder input. Use whenever someone says "write the PRD", "write the BRD", "document the requirements", "turn this into a spec", or has completed discovery and needs requirements formally documented before build begins. A PRD defines what to build and why - from the product/user perspective. A BRD defines what the business needs the solution to achieve - from the business/stakeholder perspective. Both serve the same purpose: give the team a single agreed source of truth so everyone builds the same thing. Use this skill after discovery, before user stories or design begins.'
-version: 1.0.0
+version: 1.1.0
 argument-hint: <discovery findings, charter, or feature brief>
 allowed-tools: Read
 ---
@@ -14,12 +14,27 @@ $ARGUMENTS
 
 ---
 
+# Update Mode - Revising an Existing PRD
+
+If a PRD for this project already exists, do not rerun the full intake. Ingest the existing document plus the described change, then:
+
+- Ask targeted questions only about what the change touches - scope boundaries, NFRs, dependencies
+- Apply the Step 3-5 quality rules to the new or changed FRs only
+- Record the delta in the Scope Changes table, including who confirmed it and when
+- Bump the **Version** field (e.g. 1.0 → 1.1)
+- Suggest a `/decision-log` entry linking the two versions, per the global versioning rules
+
+Everything below applies to writing a PRD from scratch.
+
+---
+
 # Step 1 - Run the Intake Interview
 
 Read `skills/prd/intake.md` and follow the interview protocol exactly.
 
 - Scan the input for signals listed in intake.md before asking any questions
-- Ask **one question at a time** - never present multiple questions together
+- Pre-fill any always-ask question the input or the invocation already answers explicitly. Confirm all extracted values in one batched message, each marked as extracted from the input, never presented as an assumption
+- Ask the remaining questions **one at a time** - never present multiple open questions together
 - Wait for the user's response before moving to the next question
 - Skip conditional questions whose signal was not detected
 - **Do not begin writing the PRD until Q10 has been answered**
@@ -35,6 +50,8 @@ Before writing any FR, derive the feature areas from the source material and con
 > "I'll group requirements under these areas: [list them]. Does that look right, or should any be split, merged, or renamed?"
 
 Wait for confirmation or correction. Adjust the areas before proceeding. This prevents structural rework after FRs are written.
+
+**Scale check, in the same message:** if the confirmed areas look likely to produce more than roughly 40-50 FRs, say so and propose splitting into per-phase or per-epic PRDs. Let the user decide before any FR is written.
 
 ---
 
@@ -161,9 +178,11 @@ The output is clean markdown. Do not include guidance, rules, or instructional c
 
 ### 2. Goals & Success Metrics
 
-| Goal | Metric | Target |
-|---|---|---|
-| | | |
+*Baseline is optional. When unknown, leave it blank or flag it as an open question per the Q4 gate pattern - never invent one.*
+
+| Goal | Metric | Baseline | Target |
+|---|---|---|---|
+| | | | |
 
 ### 3. Users & Stakeholders
 
@@ -179,9 +198,16 @@ The output is clean markdown. Do not include guidance, rules, or instructional c
 **Constraints** - fixed, cannot change:
 - ...
 
+### 4b. Key User Journeys
+
+*Include only when the work is flow-shaped - user-facing journeys such as onboarding, checkout, or portals. Skip when Q2 indicates integration, migration, or infrastructure work with no user flow to narrate. 3-6 numbered plain-prose steps per primary journey, no wireframes. The FR groups in section 5 hang off these narratives.*
+
+**Journey: [name]**
+1. [step]
+
 ### 5. Functional Requirements
 
-Group by feature area or user journey. Use a parent heading when there are more than 7 areas. MoSCoW: **Must** (product fails without it) / **Should** (high value, workaround exists) / **Could** (cut first if time is tight).
+Group by feature area or user journey (matching the section 4b journeys where present). Use a parent heading when there are more than 7 areas. MoSCoW: **Must** (product fails without it) / **Should** (high value, workaround exists) / **Could** (cut first if time is tight).
 
 #### [Feature Area]
 

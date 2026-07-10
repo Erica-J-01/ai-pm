@@ -1,18 +1,30 @@
 # Acceptance Criteria Format
 
-AC must be **short and scannable**. One bullet = one testable statement.
-If a line takes more than one breath to read aloud, split it.
+AC must be **short and scannable**. One bullet or scenario line = one testable
+statement. If a line takes more than one breath to read aloud, split it.
+
+Two formats. Use the one that matches the story's input:
+
+- **Format A - screen-by-screen blocks** for design-led input (Figma,
+  screenshots, mockups)
+- **Format B - Given/When/Then scenarios** for behaviour-led input (PRD,
+  requirements text)
+
+For mixed input choose per story: screen composition and states take Format A,
+workflow behaviour takes Format B. Never mix formats inside one story.
 
 Omit sections that genuinely don't apply - never leave one blank or write "N/A".
+Definition of Ready and Definition of Done are **not** part of AC. They are
+stated once per output - see `story-template.md`.
 
 ---
 
-## Structure
+# Format A - Screen-by-Screen
 
 Stories that span multiple screens are broken out **screen by screen**.
 Each screen gets its own Functional Specs and Error Handling block.
 Shared concerns (Non-Functional Specs, Out of Scope, Permissions, Analytics,
-Definition of Done, Dependencies) appear **once at the end**.
+Dependencies) appear **once at the end**.
 
 ---
 
@@ -66,7 +78,7 @@ Definition of Done, Dependencies) appear **once at the end**.
 ## Permissions *(omit if no access control applies)*
 
 - [Role]: can [action]
-- [Role]: cannot [action]; [what they see instead]
+- [Role]: cannot [action] - [what they see instead]
 
 ---
 
@@ -79,25 +91,13 @@ Missing instrumentation is expensive to retrofit - always specify it.
 
 ---
 
-## Definition of Done
-
-- [ ] All functional and non-functional AC passed
-- [ ] Unit and integration tests written and passing
-- [ ] Code reviewed and merged
-- [ ] Tested in staging environment
-- [ ] No known defects outstanding
-- [ ] No new accessibility violations (WCAG 2.1 AA)
-- [ ] Feature flag configured (if applicable)
-
----
-
 ## Dependencies
 
 - [System or service name]: [link or description]
 
 ---
 
-## Example (expense submission flow)
+## Format A example (expense submission flow)
 
 ```
 ## Screen 1 - Submit Expense
@@ -151,19 +151,50 @@ Missing instrumentation is expensive to retrofit - always specify it.
 
 ## Permissions
 - Authenticated employees: can submit claims.
-- Unauthenticated users: cannot access this screen; redirected to sign-in.
-
----
-
-## Definition of Done
-- [ ] All functional and non-functional AC passed
-- [ ] Unit and integration tests written and passing
-- [ ] Code reviewed and merged
-- [ ] Tested in staging environment
-- [ ] No known defects outstanding
+- Unauthenticated users: cannot access this screen - redirected to sign-in.
 
 ---
 
 ## Dependencies
 - Expense API: `[YOUR_API_BASE_URL]/expenses`
 ```
+
+---
+
+# Format B - Given/When/Then Scenarios
+
+Number the scenarios inside one fenced block. Happy path first, then variants
+and boundaries, then every error state.
+
+```
+Scenario [N] - [short name]
+Given [exact starting state],
+When [one user action],
+Then [observable outcome]
+and [further observable outcomes, one per line].
+```
+
+*Rules:*
+- One When per scenario - exactly one action under test
+- Every Then is observable and testable as written
+- Error scenarios quote the exact message the user sees - no paraphrasing
+- Success, validation failure, and API failure covered for every submit or async action
+- Boundary values get their own scenario (at the limit, over the limit)
+
+## Format B example
+
+```
+Scenario 1 - Successful submission with receipt
+Given I am logged in as an employee,
+When I complete Amount, Category, and Date and click "Submit",
+Then the claim is saved with status "Pending Approval"
+and I see: "Your expense claim has been submitted."
+
+Scenario 2 - Error: required field missing
+Given I am logged in as an employee,
+When I click "Submit" with Amount, Category, or Date empty,
+Then the form does not submit
+and each missing required field shows an inline error message.
+```
+
+See `reference.md` for a full worked example in this format.

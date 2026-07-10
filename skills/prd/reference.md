@@ -26,11 +26,11 @@ Finance clients currently request invoice updates by email, creating a manual wo
 
 ### 2. Goals & Success Metrics
 
-| Goal | Success Metric | Target |
-|---|---|---|
-| Reduce client email requests | Volume of invoice-related emails to ops | Down 70% within 60 days of go-live |
-| Reduce ops manual effort | Hours spent generating/sending reports manually | From 2 hrs/month to under 15 mins |
-| Client self-service adoption | % of clients logging in within 30 days of launch | > 80% |
+| Goal | Metric | Baseline | Target |
+|---|---|---|---|
+| Reduce client email requests | Volume of invoice-related emails to ops | [BASELINE NEEDED] - see Q5 | Down 70% within 60 days of go-live |
+| Reduce ops manual effort | Hours spent generating/sending reports manually | 2 hrs/month | Under 15 mins/month |
+| Client self-service adoption | % of clients logging in within 30 days of launch | 0% - no portal exists today | > 80% |
 
 ---
 
@@ -57,6 +57,21 @@ Finance clients currently request invoice updates by email, creating a manual wo
 - Budget is £80k
 - No delivery or table booking features (explicitly out of scope)
 - Must comply with GDPR - client data handling requires review
+
+---
+
+### 4b. Key User Journeys
+
+**Journey: client finds an invoice**
+1. Client logs in with email and password
+2. Client lands on their invoice list, newest first
+3. Client filters by date range or status to narrow the list
+4. Client downloads the invoice as a PDF
+
+**Journey: ops publishes monthly invoices**
+1. Ops admin uploads the month's invoices in bulk via CSV
+2. The system attaches each invoice to the right client account
+3. Each client receives an email notification that a new invoice is available
 
 ---
 
@@ -94,7 +109,7 @@ Finance clients currently request invoice updates by email, creating a manual wo
 | ID | Category | Requirement | Target |
 |---|---|---|---|
 | NFR-01 | Performance | Page load time for invoice list | Under 2 seconds on a standard broadband connection |
-| NFR-02 | Security | Authentication | Password + MFA for admin accounts; password only for client accounts (confirm with IT) |
+| NFR-02 | Security | Authentication | Password + MFA for admin accounts, password only for client accounts (confirm with IT) |
 | NFR-03 | Availability | System uptime during business hours | 99.5% Monday-Friday 8am-6pm |
 | NFR-04 | Accessibility | Client-facing pages | WCAG 2.1 AA minimum |
 | NFR-05 | Data | Invoice data retention | 7 years, per financial regulation |
@@ -129,6 +144,7 @@ Finance clients currently request invoice updates by email, creating a manual wo
 | Q2 | What authentication standard does IT require for external-facing systems? | IT Lead | Before FR-01 is finalised |
 | Q3 | What is the existing invoice data format and can it be imported without transformation? | Ops + IT | Before FR-07 is estimated |
 | Q4 | What does GDPR require for this type of client data portal? | Legal / DPO | Before build begins |
+| Q5 | What is the current monthly volume of invoice-related emails? Needed as the baseline for the 70% reduction target | Ops | Before go-live |
 
 ---
 
@@ -150,6 +166,10 @@ Finance clients currently request invoice updates by email, creating a manual wo
 
 **Out of scope is specific.** Five named items, including the nuance that mobile browser is in scope but native app is not. This prevents the conversation mid-build.
 
-**Open questions has 4 items.** A PRD with zero open questions after one round of discovery is almost certainly missing something. Real requirements always surface things that need a decision before build.
+**Open questions has five items.** A PRD with zero open questions after one round of discovery is almost certainly missing something. Real requirements always surface things that need a decision before build.
+
+**Goals carry baselines.** Ops effort is measured from a known 2 hrs/month. The email reduction target is flagged [BASELINE NEEDED] with an owned open question, rather than shipping a 70% target nobody can verify.
+
+**Key journeys make the FR table readable.** Two short narratives answer "walk me through what the user sees" before anyone opens the FR table, and the FR groups hang off them. This is flow-shaped work, so the section earns its place - an integration or migration PRD would skip it.
 
 **NFRs have numbers.** "Under 2 seconds", "99.5% uptime", "WCAG 2.1 AA" - not "fast", "reliable", "accessible". Non-functional requirements without targets cannot be tested.

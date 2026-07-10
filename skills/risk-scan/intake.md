@@ -1,8 +1,14 @@
 # Risk Scan - Pre-Scan Interview Protocol
 
-Run this interview every time `/risk-scan` is invoked, before writing any analysis.
+Run this interview whenever `/risk-scan` is invoked interactively, before writing any analysis.
 
-Ask **one question at a time**. Wait for the user's answer before asking the next. For every question, offer suggested answers the user can pick from or ignore and type their own. Never present multiple questions at once.
+Ask **one question at a time**. Wait for the user's answer before asking the next. For every question, offer suggested answers the user can pick from or ignore and type their own. Never present multiple questions at once, except the batched forms of Q5 and Q11 described below.
+
+**Skip rule:** skip any question the input already answers, and record the source of the answer (e.g. "from the SOW") so the analysis can cite it. Only ask what the input leaves open.
+
+**Depth scaling:** at Low depth (the user asked for a quick scan) ask only Q1 and Q13. Asking for a quick scan already answers Q2.
+
+**Non-interactive mode:** when risk-scan runs inside an orchestrated `/pm` chain straight after triage, ask no questions at all. Analyse what the input provides and record every unanswered area in Not Assessed.
 
 ---
 
@@ -29,7 +35,7 @@ Before asking anything, scan the input for these signals. They determine which c
 
 Work through the questions in the order listed. Ask each question, present the suggested answers, wait for the response, then move to the next.
 
-Skip a conditional question if its signal was not detected in the input, or if a previous answer already covered it.
+Skip a conditional question if its signal was not detected in the input, if the input itself already answers it, or if a previous answer already covered it.
 
 ---
 
@@ -89,24 +95,22 @@ Skip a conditional question if its signal was not detected in the input, or if a
 
 ### Q5 - External Dependency Status [ask if: named external dependencies detected]
 
-List every dependency named in the input before asking. Ask about each one separately and do not stop early - cover all of them even if some seem resolved.
+List every dependency named in the input, then ask about all of them in one batched question. Present the full list with the status options and let the PM answer per line. Cover every dependency, even ones that seem resolved.
 
-For each dependency:
+> "The document names these dependencies: [list them]. For each one, what's the current status?"
 
-> "The document names [dependency name] as a dependency. What's the current status?"
-
-**Suggested answers:**
+**Status options (answer per dependency):**
 - A) Resolved - access / approval confirmed
 - B) In progress - actively being worked, expected by [date]
 - C) Blocked - no progress, no clear resolution date
 - D) Not yet started
 - E) Unknown - I'll need to check
 
-For any dependency answered B or D, follow up with one additional question:
+For any dependency answered B or D, follow up once, covering all of them together:
 
-> "Has sandbox/development access been confirmed, or is the team working against documentation only? And is production access on a separate track?"
+> "For [names]: has sandbox/development access been confirmed, or is the team working against documentation only? And is production access on a separate track?"
 
-*(Repeat for every named dependency before moving on. Do not skip any.)*
+*(One batched question covers every named dependency - do not drop any from the list.)*
 
 ---
 
@@ -179,20 +183,18 @@ For any dependency answered B or D, follow up with one additional question:
 
 ### Q11 - Integration Status [ask if: third-party integrations detected]
 
-List every integration named in the input before asking. Ask about each one separately - do not stop after the most prominent ones. Integrations from prior phases that are assumed complete should still be confirmed.
+List every integration named in the input, then ask about all of them in one batched question. Do not drop the less prominent ones. Integrations from prior phases that are assumed complete should still be confirmed.
 
-For each integration:
+> "These integrations are named: [list them]. What is the current status of each?"
 
-> "What is the current status of the [integration name] integration?"
-
-**Suggested answers:**
+**Status options (answer per integration):**
 - A) Complete - integrated and tested end-to-end
 - B) In progress - being built or tested now
 - C) Not started - not yet begun
 - D) Blocked - waiting on access, credentials, or a third party
 - E) Descoped - no longer in plan
 
-*(Repeat for every named integration before moving on. Include integrations from closed phases if they underpin current phase deliverables.)*
+*(One batched question covers every named integration. Include integrations from closed phases if they underpin current phase deliverables.)*
 
 ---
 
@@ -223,3 +225,7 @@ For each integration:
 ## Step 3: Proceed to Analysis
 
 Once the user has answered Q13, proceed directly to the risk analysis. Do not ask further questions unless a response introduces a critical ambiguity that would materially change the risk register.
+
+One exception: if any red risk lacks a named owner at finalisation, ask a single batched question covering all of them ("Who personally owns each of these?") per the Quality Checks in SKILL.md.
+
+In non-interactive mode there is no interview and no owner question - proceed straight to analysis with whatever the input provides and record the gaps in Not Assessed.

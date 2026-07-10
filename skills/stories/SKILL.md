@@ -1,7 +1,7 @@
 ---
 name: user-stories
 description: Act as a senior PM to transform design files, requirement docs, PRDs, and feature descriptions into structured Jira epics and user stories with clean, testable acceptance criteria. Trigger whenever the user shares a Figma link, requirements doc, PRD, image, or pasted text and wants to plan, scope, or ticket work - even if they don't use PM terminology. Trigger for phrases like "break this into stories", "create epics", "plan this feature", "write tickets", "break down this PRD", "populate the backlog", "what are the epics here", "turn this into Jira issues", or "what do we build first?". Always prefer this skill over ad-hoc planning.
-version: 1.0.0
+version: 1.1.0
 argument-hint: <PRD, feature description, or Figma link>
 allowed-tools: Read, mcp__claude_ai_Atlassian_Rovo__searchJiraIssuesUsingJql, mcp__claude_ai_Atlassian_Rovo__createJiraIssue, mcp__claude_ai_Atlassian_Rovo__getJiraProjectIssueTypesMetadata
 ---
@@ -36,6 +36,8 @@ Process everything provided before forming opinions.
 | Pasted text / PRD | Read for features, user types, constraints, data models |
 | Mixed | Process all inputs, synthesise before proceeding |
 
+**If no Figma tool is available** (the user pasted a Figma link but no Figma MCP tool exists at runtime): say so plainly and ask for exported screens, screenshots, or a written description of each screen before writing anything. Never infer screens, fields, or flows from the URL or the surrounding prose - that is fabricated requirements.
+
 Mentally extract: personas, functional areas, data entities, integrations,
 constraints. Do not surface this extraction as output - move straight to
 epic recommendations.
@@ -54,11 +56,11 @@ Search Jira silently before recommending anything. Do not narrate this search.
 project = [PROJECT_KEY] AND issuetype = Epic ORDER BY created DESC
 ```
 
-Ask for the project key if unknown - do not guess. **Validate the project key against `[A-Za-z0-9_]+` before building the query; never interpolate raw user text into JQL** (see *Input Validation & Sanitisation* in `.claude/CLAUDE.md`).
+Ask for the project key if unknown - do not guess. **Validate the project key against `[A-Za-z0-9_]+` before building the query. Never interpolate raw user text into JQL** (see *Input Validation & Sanitisation* in `.claude/CLAUDE.md`).
 
 Classify each existing epic:
-- **Overlap** - same user journey. Flag it; recommend extending rather than creating a duplicate.
-- **Adjacent** - related but distinct. Note it; flag dependencies.
+- **Overlap** - same user journey. Flag it and recommend extending rather than creating a duplicate.
+- **Adjacent** - related but distinct. Note it and flag dependencies.
 - **Unrelated** - ignore.
 
 Output this block first:
@@ -79,7 +81,7 @@ If no epics exist: state "No existing epics found." and continue.
 **Grouping rules:**
 - One epic per complete user journey or major product area
 - A journey is one epic even if it spans multiple screens - screens are stories, not epics
-- 3-6 epics is healthy; more than 8 signals over-splitting
+- 3-6 epics is healthy. More than 8 signals over-splitting
 - Never create a "General" or "Miscellaneous" epic
 - Never split one journey into multiple epics based on technical layers
 
@@ -105,6 +107,8 @@ Wait for approval and confirm the final list before Phase 3.
 Generate stories for **one epic at a time** unless the user asks for all.
 Order stories by dependency - foundational first.
 
+**Extending an overlap epic:** when the user approved extending an existing epic in Phase 2, fetch its current child stories first (`parent = [EPIC_KEY]`) so you never duplicate in-flight work. If Jira is not connected, ask the user to paste the epic's current stories before generating anything. Open that epic's preview with a three-line diff: already covered, partially covered (extend the existing ticket), and new.
+
 Before splitting a multi-screen flow ask:
 > "Will one developer own this full flow, or will different parts go to different developers?"
 > One developer → single story with grouped AC. Multiple developers → split by ownership boundary only.
@@ -114,12 +118,19 @@ Before splitting a multi-screen flow ask:
 ### Story template
 
 Read `references/story-template.md` now and use it verbatim for every story.
-Do not omit any field. Use "None" only when a field genuinely does not apply.
+Do not omit any field except those the template marks optional. Use "None"
+only when a field genuinely does not apply.
 
 ### AC format
 
-Read `references/ac-format.md` now. Write every story's acceptance criteria
-using that format exactly.
+Read `references/ac-format.md` now. It defines two formats - use the one that
+matches the story's input:
+
+- **Screen-by-screen blocks** for design-led input (Figma, screenshots, mockups)
+- **Given/When/Then scenarios** for behaviour-led input (PRD, requirements text)
+
+For mixed input choose per story: screen composition and states take screen
+blocks, workflow behaviour takes scenarios. Never mix formats inside one story.
 
 **AC must be short and scannable.** Each line is one concrete, testable
 statement. If a line takes more than one breath to read aloud, split it.
@@ -132,11 +143,20 @@ Before showing any story, verify every AC section:
 - Every validation rule states an exact value - no words like "valid", "strong", or "appropriate"
 - Every error state shows the exact message the user will see
 - Loading, success, and failure are covered for every async action
-- Every test scenario has a concrete Given/When/Then with no ambiguity
+- Scenario-format stories: every Given/When/Then is concrete with no ambiguity
+- Screen-format stories: every screen block covers display, actions, and error handling
+- Every assumption names who confirms it
 - Every open question has an owner and a deadline
-- Story is ≤ 8 points - flag anything larger for splitting
+- Size is labelled as indicative - flag anything that looks likely above 8 points as "likely >8 - split before refinement"
 
 Fix failures before showing the preview.
+
+### Epic preview footer
+
+Close each epic's preview with two things:
+
+1. **Story summary table** - one row per story: ID, title, priority, size, linked requirement.
+2. **Coverage check** - one line per numbered requirement in the source, mapping it to its stories. Flag any requirement with no story as an orphan and ask whether to add a story or park it. Skip only when the input has no numbered requirements.
 
 Present all stories for the epic as a **preview block**, then ask:
 > Approve these to create them in Jira, or let me know what to adjust.
@@ -169,7 +189,7 @@ Confirm each creation with its Jira key as you go.
 ## Always-on rules
 
 - **Be decisive.** Recommend clearly. Ten options without a recommendation is unhelpful.
-- **Surface assumptions.** Anything inferred but not stated in the input becomes an open question with a named owner.
+- **Surface assumptions.** Anything inferred but not stated goes in the story's Assumptions block with who must confirm it - the team can proceed on it. If the answer would change the story, log it as an open question with an owner and deadline instead. Never merge the two.
 - **Never invent requirements.** Only derive stories from what is explicitly in the inputs. If something is missing, ask.
 - **One phase at a time.** The gates are intentional - they prevent rework.
 - **AC must be testable as written.** If a criterion needs interpretation to execute, rewrite it.

@@ -1,6 +1,8 @@
 # PRD Intake - Clarifying Interview Protocol
 
-Run this interview before generating any PRD or BRD. Ask **one question at a time**. Wait for the user's response before moving to the next. The user may pick a suggested answer or type their own.
+Run this interview before generating any PRD or BRD. First apply the pre-fill rule below, then ask the remaining questions **one at a time**, waiting for the user's response before moving to the next. The user may pick a suggested answer or type their own.
+
+**Pre-fill rule:** if the input or the invocation already answers an always-ask question explicitly (e.g. "write the PRD" answers Q1, a charter that names the users answers Q3), do not re-ask it. Present every pre-filled value in a single batched confirmation message before the interview starts, each one clearly marked as **extracted from the input** - never present an assumption as extracted. If a value is inferred rather than stated, ask the question instead. The user confirms or corrects the batch in one turn. Then ask individually only the questions the input genuinely does not answer. The Q3 scope discrepancy check and the Q4 quality gate apply to extracted values exactly as to typed answers, and Q10 is always asked last as the gate before writing.
 
 ---
 
@@ -101,12 +103,24 @@ If the user cannot provide numbers, accept their answer, note each gate-style me
 
 > "A few quick NFR targets - answer what you know, skip what you don't:
 > - Response time target? (e.g. < 2s, < 3s)
+> - Expected user volume / peak concurrency?
 > - Session inactivity timeout?
 > - Browsers / devices that must be supported?
 > - Data retention period for user data?
 > - Accessibility standard? (e.g. WCAG 2.1 AA, or explicitly not required for this phase)"
 
 Record each confirmed value directly as an NFR row. For any skipped or unknown item, add `[NEEDS TARGET]` in the NFR table and a corresponding open question. Do not defer the entire NFR section to after generation.
+
+---
+
+### Q5c - Integration Readiness [ask if: `integration-heavy` signal detected]
+
+> "The input names several integrations: [list them]. Quick-fire, for each one in a single reply:
+> - Who owns the relationship or system?
+> - Do you have docs, a sandbox, and credentials access today?
+> - What should the product do when it is unavailable or returns an error?"
+
+Cover all named integrations in this one message - do not spend a turn per integration. Record each answer as a row in the Dependencies table (section 8) with the owner and a Confirmed / Pending / Blocked status, and feed the failure behaviour into the Step 5 error-state FRs. Unknown access status means the dependency is Pending, not omitted.
 
 ---
 
@@ -196,6 +210,7 @@ Carry all answers forward:
 - Q4 answers → populate Goals & Success Metrics. Use the provided targets, and flag gate-style or outstanding ones as open questions
 - Q5 answers → populate Constraints in section 4
 - Q5b answers → populate the NFR table with confirmed targets. Unknowns become `[NEEDS TARGET]` rows and open questions
+- Q5c answers → populate the Dependencies table (section 8) with owner and Confirmed / Pending / Blocked status per integration, and feed failure behaviour into the Step 5 error-state FRs
 - Q6 answers → populates Out of Scope section 7
 - Q7 answer → adds discovery caveat if needed
 - Q8 answer → ensures requirements reflect current state, not stale document

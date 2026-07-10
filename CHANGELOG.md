@@ -4,6 +4,36 @@ All notable changes to AI PM Assistant are recorded here.
 
 ---
 
+## [1.1.0] - 2026-07-09
+
+A content upgrade to the Claude PM skills (the v1 skills track, separate from the v2 dashboard line). Every one of the 20 skills was reviewed from a working project manager's standpoint and 134 changes were applied, each verified against the skill text. The recurring fix is that the skills no longer treat every task as a one-shot, clean-input, first-run event. They now handle repeated runs, messy input, and revisions the way real delivery work does. All changes are additive and the CLI skill chain order is unchanged. Materially changed SKILL.md files are bumped to version 1.1.0, and the dashboard prompt bundle was regenerated from the updated skills.
+
+### Memory between runs
+1. risk-scan, sprint-report, release-checklist, decision-log, stakeholder-update, budget-tracker, and roadmap now read the project's prior artefact and lead with what changed since last time (stable risk ids and a delta block, RAG trend, forecast movement, a re-assessment mode) instead of producing a memoryless snapshot.
+2. decision-log appends to one running register with per-decision ids and dates rather than minting a new file per decision.
+
+### Messy and incomplete input
+1. Interviews now skip questions the input already answers and scale to depth, so a quick risk scan no longer forces 15 to 25 round trips, and the PRD interview batch-confirms extracted values instead of asking seven questions one at a time.
+2. meeting-notes never guesses a name for an unlabelled speaker, records unowned actions as Unassigned instead of dropping them, and notes inaudible passages rather than papering over them.
+3. tech-review, sprint-report, and sprint-sow define what to do when the input is thin, including a cannot-assess verdict and a proceed-with-flagged-gaps path.
+
+### Never invent data
+1. Corrected the worked examples that taught invention: charter now tags derived scope boundaries as proposed, sprint-planning anchors capacity to stated velocity instead of a fabricated conversion and marks an unsupplied Definition of Done as proposed, sprint-report stops referencing a sprint goal that was never given, and sprint-sow emits plain ticket keys instead of literal placeholder links.
+2. budget-tracker states how the forecast is calculated in plain arithmetic and surfaces its rate assumptions rather than inventing a blended rate.
+
+### Audience safety
+1. discovery, meeting-notes, retrospective, stakeholder-update, and onboarding add an internal-versus-client check before content is circulated externally, so candid named comments and internal commercials are not published to a client-visible destination by accident.
+
+### Update and revision modes
+1. prd, charter, roadmap, and release-checklist can now revise an existing artefact (targeted questions on what changed, a version bump, a changes-since note) instead of only creating from scratch.
+
+### Correctness and consistency fixes
+1. Removed the pm orchestrator's phantom risk-dashboard tail that fired at the end of every session and invoked a skill that does not exist, and added run-through mode plus existing-artefact awareness.
+2. Fixed triage's dead skill routings, reconciled the five reference examples that had drifted from their own mandatory templates (stories, risk-scan, sprint-planning, sprint-report, sprint-sow), and removed emoji from the calibration files that were being copied into client steering packs.
+3. Resolved release-checklist's verdict contradiction so an accepted FAIL now produces a valid CONDITIONAL GO with written attribution.
+
+---
+
 ## [2.6.0] - 2026-07-06
 
 A production-hardening release for the dashboard, driven by an adversarially verified scalability and deploy audit. It fixes bugs that failed silently on the deployed build, roughly halves the first-load payload, adds a frontend observability layer, and turns on stricter type safety. No change to the CLI skill chain. All changes are additive.

@@ -37,9 +37,11 @@ The team proposes using Stripe Connect - a product designed for marketplaces - t
 ### Delivery Implications
 
 - **Timeline:** 3 sprints for backend only. Frontend payment UI is explicitly out of scope - this needs a separate estimate before the full feature can ship to users.
+- **Estimate:** The 3-sprint figure covers backend build only. The proposal does not say whether QA, environment setup, or deployment are included, and does not state its basis - spike or prior experience. Until both are confirmed (see question 3), treat the figure as indicative, not commitment-ready.
 - **Team / skills:** Stripe Connect has a steeper learning curve than basic Stripe integration. The team needs familiarity with OAuth flows, webhook reliability, and idempotency handling. Confirm this exists in the current team before committing to the sprint estimate.
 - **Scope:** Frontend payment UI is missing from this proposal. If the end-to-end payment flow needs to ship as one release, the frontend work must be scoped and added to the plan now - not discovered mid-delivery.
 - **Third-party dependencies:** Stripe Connect requires vendor onboarding (each vendor must complete Stripe's KYC process before they can receive payouts). If vendors don't complete onboarding, payouts are blocked regardless of what the platform builds.
+- **Cost / commercial:** Stripe Connect introduces per-transaction and platform fees that the proposal does not mention. No figures are invented here - question 7 asks the SA to surface them so the commercial model can absorb them before the approach is committed.
 - **Operational / maintenance:** Webhook reliability must be monitored in production. Failed webhooks mean missed payouts - this requires alerting and a retry strategy from day one, not post-launch.
 
 ---
@@ -48,19 +50,19 @@ The team proposes using Stripe Connect - a product designed for marketplaces - t
 
 | # | Risk | Likelihood | Impact | Note |
 |---|---|---|---|---|
-| R1 | Frontend payment UI is unscoped - the backend ships but users can't complete a payment | H | H | Proposal explicitly excludes frontend; no estimate exists yet |
+| R1 | Frontend payment UI is unscoped - the backend ships but users can't complete a payment | H | H | Proposal explicitly excludes frontend and no estimate exists yet |
 | R2 | Vendor KYC onboarding blocks payout capability at launch | M | H | Stripe requires each vendor to complete identity verification before payouts are enabled - this is vendor-driven, not platform-driven |
-| R3 | Team lacks Stripe Connect-specific experience, causing underestimation of webhook and OAuth complexity | M | M | Basic Stripe ≠ Stripe Connect; connected accounts, OAuth, and idempotency handling are meaningfully more complex |
+| R3 | Team lacks Stripe Connect-specific experience, causing underestimation of webhook and OAuth complexity | M | M | Basic Stripe is not Stripe Connect - connected accounts, OAuth, and idempotency handling are meaningfully more complex |
 | R4 | Webhook failures in production cause silent payout misses with no alerting | M | H | Proposal mentions idempotency keys but doesn't address monitoring or retry strategy |
 
-**Top risk to act on now:** R1 - the frontend is out of scope but required for the feature to ship; without a scope and estimate for the payment UI, the delivery plan has a gap that will surface mid-sprint.
+**Top risk to act on now:** R1 - the frontend is out of scope but required for the feature to ship. Without a scope and estimate for the payment UI, the delivery plan has a gap that will surface mid-sprint.
 
 ---
 
 ### Dependencies
 
 - Stripe Connect platform account must be created and configured before development begins
-- Each vendor must complete Stripe's KYC onboarding before they can receive payouts - this is a vendor action, not a platform build task; it needs a comms and onboarding plan
+- Each vendor must complete Stripe's KYC onboarding before they can receive payouts - this is a vendor action, not a platform build task, and it needs a comms and onboarding plan
 - `vendor_accounts` data model must be reviewed and approved before backend sprint 1 begins
 - Frontend payment UI must be scoped and estimated separately before a full delivery timeline can be confirmed
 - Webhook endpoint infrastructure (reliability, retry, alerting) must be confirmed as in scope for the backend sprints

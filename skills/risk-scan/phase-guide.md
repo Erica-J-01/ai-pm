@@ -1,6 +1,6 @@
 # Phase Risk Guide
 
-Read this when the current phase is Testing or Deployment, or when a project is transitioning between phases and risks from the previous phase may still be active.
+Read this on every scan, for whichever phase the project is in - Discovery through Deployment - plus the phase-transition notes adjacent to that phase. Use it as a discovery checklist to catch the high-frequency risks of the current phase, not as content to copy into the output.
 
 ---
 

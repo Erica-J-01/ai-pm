@@ -1,7 +1,7 @@
 ---
 name: sprint-planning
 description: Produces a structured sprint plan from team availability, backlog items, and sprint goals. Use when a PM needs to plan an upcoming sprint - including capacity calculation, backlog scoping, dependency identification, and sprint plan document generation. Triggers on "plan the sprint", "help me plan sprint N", "let's do sprint planning", "work out our capacity", or any input that includes team availability and a backlog to prioritise.
-version: 1.0.0
+version: 1.1.0
 argument-hint: <team availability, backlog, and sprint goal>
 allowed-tools: Read
 ---
@@ -28,22 +28,27 @@ Ask for anything missing before generating the plan. Do not invent placeholders 
 |---|---|---|
 | Team members and availability | Yes | Names, days available, any PTO or on-call |
 | Sprint length | Yes | Number of days or weeks |
-| Backlog items to consider | Yes | Paste, describe, or pull from tracker |
+| Backlog items to consider | Yes | Paste, describe, or attach a tracker export - this skill does not pull from the tracker itself |
 | Sprint goal | Yes | One sentence - if the user can't state it, flag that first |
-| Carryover from last sprint | No | Anything unfinished that's being re-committed |
+| Historical velocity | No | Points delivered in the last 2-3 sprints - the anchor for capacity |
+| Carryover from last sprint | No | Anything unfinished being re-committed - ask how much work remains on each item |
 | Dependencies | No | Anything blocked on another team or external party |
 | Estimation unit | No | Points or hours - default to points if not specified |
+| Team's Definition of Done | No | If not supplied, propose one and mark it for the team to confirm |
 
-If backlog or team are missing, ask before proceeding.
+If backlog or team are missing, ask before proceeding. If asked to pull a board from the tracker, say plainly that this skill works from pasted data and ask for a paste or export.
 
 ---
 
 ## Capacity Rules
 
 - Default planning capacity: **70-80% of available days** - interrupts, meetings, and reviews eat the rest
+- Anchor points to velocity. If the last 2-3 sprints' velocity is known, sanity-check total capacity against it and flag any big gap. If not, state the day-to-points conversion you assumed and add one caveat: "No velocity baseline - capacity is estimated, treat load % as indicative."
 - Flag explicitly if the proposed sprint load exceeds 80% of capacity
+- Check load per owner, not just the team total. Flag any individual above 80% of their capacity, counting named stretch items they own - sprints fail on the bottleneck person, not the average.
+- List unestimated items with estimate TBD and exclude them from the load calculation. Print: "Load % excludes [N] unestimated items - true load is higher. Estimate with the team before committing." Never estimate on the team's behalf.
 - If PTO or on-call reduces a person to less than 2 days, note them as limited capacity
-- Carryover items count against capacity - do not treat them as free
+- Carryover counts against capacity at **remaining effort**, not the original estimate - ask how much work remains. Keep the original estimate in the plan for the audit trail. Never treat carryover as free.
 
 ---
 
@@ -54,6 +59,8 @@ If backlog or team are missing, ask before proceeding.
 - **P2 - Stretch:** Commit only after P0 and P1 are fully covered.
 
 Never commit stretch items at full confidence. Label them as stretch in the plan.
+
+Check every committed P0 and P1 item against the sprint goal. If some do not serve it, say so in the plan: "[X] of [Y] committed points do not serve the sprint goal."
 
 ---
 
@@ -76,6 +83,8 @@ Never commit stretch items at full confidence. Label them as stretch in the plan
 | **Total** | **[X] days** | **[X] points** | |
 
 > Planned at [X]% of total capacity.
+> If velocity was supplied: "Sanity check: last [N] sprints averaged [X] points." Flag if capacity strays far from it.
+> If not: "No velocity baseline - capacity estimated at [conversion assumption], treat load % as indicative."
 
 ---
 
@@ -88,16 +97,20 @@ Never commit stretch items at full confidence. Label them as stretch in the plan
 | P2 | [Stretch item] | [X] pts | [Person] | None |
 
 **Planned load:** [X] points | **Available capacity:** [X] points | **Load:** [X]%
+**Per-person load:** [Name] [X] of [Y] pts ([X]%, [X]% if stretch starts) | [repeat per person]
 
 > If load exceeds 80%: flag this explicitly - "This sprint is over-committed. Recommend cutting [item] or moving to P2."
+> If any individual exceeds 80%, counting stretch they own: flag them by name and say what to hold or move.
+> If committed items stray from the goal: "[X] of [Y] committed points do not serve the sprint goal."
+> If items are unestimated: "Load % excludes [N] unestimated items - true load is higher. Estimate with the team before committing."
 
 ---
 
 ### Carryover
 
-| Item | Original Sprint | Reason Not Completed | Re-committed? |
-|------|----------------|----------------------|---------------|
-| [Item] | Sprint [N] | [Brief reason] | Yes / No |
+| Item | Original Sprint | Original Estimate | Remaining Effort | Reason Not Completed | Re-committed? |
+|------|----------------|-------------------|------------------|----------------------|---------------|
+| [Item] | Sprint [N] | [X] pts | [X] pts | [Brief reason] | Yes / No |
 
 *(Omit section if no carryover)*
 
@@ -122,6 +135,8 @@ Never commit stretch items at full confidence. Label them as stretch in the plan
 ---
 
 ### Definition of Done
+
+*Use the team's own DoD if they supplied one. If not, title this section "Definition of Done (proposed, confirm with team)" and propose the checklist below - never present an invented DoD as the team's own.*
 
 Sprint [N] is complete when all of the following are true:
 
