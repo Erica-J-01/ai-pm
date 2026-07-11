@@ -33,6 +33,10 @@ export interface ScalarField {
   options?: string[];
   placeholder?: string;
   required?: boolean;
+  /** Needs a person to fill it in - not auto-filled from other artefacts. */
+  human?: boolean;
+  /** Derived from other artefacts and refreshed on open - hidden from the editor. */
+  auto?: boolean;
 }
 export interface ListField {
   name: string;
@@ -40,6 +44,10 @@ export interface ListField {
   kind: "list";
   addLabel: string;
   required?: boolean;
+  /** Needs a person to fill it in - not auto-filled from other artefacts. */
+  human?: boolean;
+  /** Derived from other artefacts and refreshed on open - hidden from the editor. */
+  auto?: boolean;
   itemFields: ScalarField[];
 }
 export interface EpicsField {
@@ -47,6 +55,8 @@ export interface EpicsField {
   label: string;
   kind: "epics";
   required?: boolean;
+  /** Derived from other artefacts and refreshed on open - hidden from the editor. */
+  auto?: boolean;
   storyFields: ScalarField[];
 }
 export type StepField = ScalarField | ListField | EpicsField;
@@ -67,13 +77,13 @@ const MOSCOW = ["Must", "Should", "Could"];
 const CHECK_STATUS = ["PASS", "RISK", "FAIL", "UNCONFIRMED", "N/A"];
 const CATEGORIES = [
   "Feature Readiness", "Testing", "Operational Readiness",
-  "Communications", "Dependencies", "Approvals", "Post-Release Readiness",
+  "Communications", "Dependencies", "Approvals", "Post-Release Readiness", "Hotfix",
 ];
 const RAG = ["green", "amber", "red"];
 const WEEKS = ["4", "6", "8", "10", "12"];
 const WEEKNUM = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 const DECISION_AREA = ["Scope", "Timeline", "Budget", "Architecture", "Team", "Process", "Other"];
-const CHANGE_STATUS = ["Proposed", "Under Review", "Approved", "Rejected"];
+const CHANGE_STATUS = ["Proposed", "Under Review", "Approved", "Rejected", "Superseded"];
 const RISK_CATEGORY = ["Delivery", "Technical", "Stakeholder", "Business"];
 const RISK_RESPONSE = ["Mitigate", "Transfer", "Avoid", "Accept", "Escalate"];
 const RISK_PROXIMITY = ["Week 1-2", "Month 1", "Month 2-3", "Later"];
@@ -81,22 +91,38 @@ const DETECT = ["Easy", "Moderate", "Hard"];
 const VELOCITY = ["Fast", "Medium", "Slow"];
 const RELEASE_TYPE = ["planned", "hotfix", "phased", "feature-flag"];
 const UPDATE_STATUS = ["On track", "At risk", "Off track"];
+const SPRINT_MODE = ["In flight", "Closed"];
+const RISK_LEVEL = ["Low", "Medium", "High"];
+const GOAL_STATUS = ["On track", "At risk", "Missed", "Not stated"];
+const FEASIBILITY_VERDICT = ["Feasible", "Feasible with conditions", "Not feasible as proposed", "Cannot assess - missing information"];
+const ROADMAP_BUCKET = ["Now", "Next", "Later"];
+const RM_CONFIDENCE = ["High", "Medium", "Low"];
+const RM_SIZE = ["S", "M", "L"];
+const COMMERCIAL_MODEL = ["fixed-price", "time-and-materials", "retainer"];
 
 export const STEPS: OnbStep[] = [
   { id: "triage", title: "Triage", intro: "Structure the raw request.", fields: [
+    { name: "requester", label: "Requester & source", kind: "textarea", placeholder: "Who sent it, their role, the channel, date. Note when they relay someone else's authority." },
     { name: "requestSummary", label: "Request summary", kind: "textarea", required: true },
     { name: "businessGoal", label: "Likely business goal", kind: "textarea", required: true },
-    { name: "stakeholderNeed", label: "Primary stakeholder need", kind: "textarea" },
+    { name: "stakeholderNeed", label: "Primary user / stakeholder need", kind: "textarea" },
     { name: "whatIsClear", label: "What is clear", kind: "list", addLabel: "Add point", itemFields: [
       { name: "point", label: "Point", kind: "text", placeholder: "Something we already know" },
     ]},
     { name: "missingInfo", label: "Missing information", kind: "list", addLabel: "Add question", itemFields: [
-      { name: "point", label: "Question", kind: "text", placeholder: "Something to clarify" },
+      { name: "question", label: "Question", kind: "text", placeholder: "Something to clarify" },
+      { name: "audience", label: "For", kind: "select", options: ["Ask requester", "Check internally"] },
     ]},
     { name: "concerns", label: "Risks / concerns", kind: "list", addLabel: "Add concern", itemFields: [
       { name: "point", label: "Concern", kind: "text" },
     ]},
-    { name: "classification", label: "Intake classification", kind: "text" },
+    { name: "urgency", label: "Urgency", kind: "textarea", placeholder: "The stated deadline and whether it reads as real or negotiable." },
+    { name: "impact", label: "Impact on current work", kind: "select", options: [
+      "New scope", "Change request against in-flight SOW", "Duplicate of existing scope", "Standalone", "Not checked - no project context",
+    ]},
+    { name: "classification", label: "Intake classification", kind: "select", options: [
+      "Ready for Discovery", "Needs Clarification", "Likely Change Request", "Needs Technical Review", "Low Priority / Unclear Value",
+    ]},
     { name: "nextStep", label: "Recommended next step", kind: "textarea" },
   ]},
   { id: "risk-scan", title: "Risk Scan", intro: "List the early risks. Likelihood and impact build the matrix.", fields: [
@@ -111,6 +137,7 @@ export const STEPS: OnbStep[] = [
       { name: "response", label: "Response", kind: "select", options: RISK_RESPONSE },
       { name: "proximity", label: "Proximity", kind: "select", options: RISK_PROXIMITY },
       { name: "owner", label: "Owner", kind: "text", placeholder: "Who owns it" },
+      { name: "triggerSignal", label: "Trigger signal", kind: "text", placeholder: "Observable sign it is materialising (required if Detect = Hard)" },
     ]},
   ]},
   { id: "charter", title: "Charter", intro: "Formalise the project.", fields: [
@@ -129,6 +156,10 @@ export const STEPS: OnbStep[] = [
       { name: "deliverable", label: "Deliverable", kind: "text" },
       { name: "due", label: "Due", kind: "text" },
     ]},
+    { name: "governance", label: "Governance", kind: "list", addLabel: "Add governance item", itemFields: [
+      { name: "item", label: "Item", kind: "text", placeholder: "e.g. Decision authority" },
+      { name: "detail", label: "Detail", kind: "text", placeholder: "Who decides / how changes are approved / reporting cadence" },
+    ]},
     { name: "milestones", label: "Timeline / milestones", kind: "list", addLabel: "Add milestone", itemFields: [
       { name: "milestone", label: "Milestone", kind: "text" },
       { name: "date", label: "Target date", kind: "text" },
@@ -143,6 +174,17 @@ export const STEPS: OnbStep[] = [
       { name: "impact", label: "Impact", kind: "select", options: HML },
       { name: "response", label: "Response", kind: "text" },
     ]},
+    { name: "constraints", label: "Constraints", kind: "list", addLabel: "Add constraint", itemFields: [
+      { name: "constraint", label: "Constraint", kind: "text", placeholder: "Fixed - cannot change" },
+    ]},
+    { name: "assumptions", label: "Assumptions", kind: "list", addLabel: "Add assumption", itemFields: [
+      { name: "assumption", label: "Assumption", kind: "text", placeholder: "Believed true - must be validated" },
+    ]},
+    { name: "clientDependencies", label: "Client-side dependencies", kind: "list", addLabel: "Add dependency", itemFields: [
+      { name: "dependency", label: "Dependency", kind: "text", placeholder: "What the client must supply" },
+      { name: "neededBy", label: "Needed by", kind: "text" },
+      { name: "owner", label: "Owner", kind: "text", placeholder: "Client-side role" },
+    ]},
     { name: "approvals", label: "Approvals", kind: "list", addLabel: "Add approver", itemFields: [
       { name: "role", label: "Role", kind: "text" },
       { name: "name", label: "Name", kind: "text" },
@@ -154,9 +196,11 @@ export const STEPS: OnbStep[] = [
     { name: "affected", label: "Who is affected", kind: "list", addLabel: "Add stakeholder", itemFields: [
       { name: "stakeholder", label: "Stakeholder", kind: "text" },
       { name: "pain", label: "Current pain", kind: "text" },
+      { name: "impact", label: "Impact", kind: "text", placeholder: "Time, money, or quality cost" },
     ]},
     { name: "findings", label: "Key findings", kind: "list", addLabel: "Add finding", itemFields: [
       { name: "finding", label: "Finding", kind: "text" },
+      { name: "source", label: "Source", kind: "text", placeholder: "Who said it, or 'unattributed'" },
       { name: "confidence", label: "Confidence", kind: "select", options: ["High", "Medium", "Low"] },
     ]},
     { name: "conflicts", label: "Conflicts / disagreements", kind: "list", addLabel: "Add conflict", itemFields: [
@@ -171,6 +215,7 @@ export const STEPS: OnbStep[] = [
       { name: "owner", label: "Owner", kind: "text" },
       { name: "by", label: "By when", kind: "text" },
     ]},
+    { name: "readiness", label: "Readiness verdict", kind: "textarea", placeholder: "Ready or not ready for charter and requirements - if not, the blocking items" },
     { name: "attendees", label: "Attendees", kind: "tags", placeholder: "Type a name and press Enter" },
   ]},
   { id: "prd", title: "PRD", intro: "Document the requirements.", fields: [
@@ -184,6 +229,7 @@ export const STEPS: OnbStep[] = [
     { name: "goals", label: "Goals & success metrics", kind: "list", addLabel: "Add goal", required: true, itemFields: [
       { name: "goal", label: "Goal", kind: "text" },
       { name: "metric", label: "Metric", kind: "text" },
+      { name: "baseline", label: "Baseline", kind: "text", placeholder: "Current value, or blank if unknown" },
       { name: "target", label: "Target", kind: "text" },
     ]},
     { name: "users", label: "Users & stakeholders", kind: "list", addLabel: "Add user", itemFields: [
@@ -196,6 +242,10 @@ export const STEPS: OnbStep[] = [
     ]},
     { name: "constraints", label: "Constraints (fixed)", kind: "list", addLabel: "Add constraint", itemFields: [
       { name: "constraint", label: "Constraint", kind: "text" },
+    ]},
+    { name: "journeys", label: "Key user journeys", kind: "list", addLabel: "Add journey", itemFields: [
+      { name: "journey", label: "Journey", kind: "text", placeholder: "e.g. Configure recipients" },
+      { name: "steps", label: "Steps", kind: "textarea", placeholder: "Numbered plain-prose steps, one per line" },
     ]},
     { name: "functional", label: "Functional requirements", kind: "list", addLabel: "Add requirement", required: true, itemFields: [
       { name: "requirement", label: "Requirement", kind: "text" },
@@ -214,7 +264,7 @@ export const STEPS: OnbStep[] = [
       { name: "dependency", label: "Dependency", kind: "text" },
       { name: "type", label: "Type", kind: "text" },
       { name: "owner", label: "Owner", kind: "text" },
-      { name: "status", label: "Status", kind: "text" },
+      { name: "status", label: "Status", kind: "select", options: ["Confirmed", "Pending", "Blocked"] },
     ]},
     { name: "openQuestions", label: "Open questions", kind: "list", addLabel: "Add question", itemFields: [
       { name: "question", label: "Question", kind: "text" },
@@ -231,49 +281,70 @@ export const STEPS: OnbStep[] = [
   { id: "stories", title: "User Stories", intro: "Add epics. Each holds its own stories.", fields: [
     { name: "epics", label: "Epics", kind: "epics", required: true, storyFields: [
       { name: "title", label: "Story title", kind: "text", placeholder: "Short goal" },
+      { name: "priority", label: "Priority", kind: "select", options: MOSCOW },
+      { name: "linkedRequirement", label: "Linked requirement", kind: "text", placeholder: "e.g. FR-04, or None" },
       { name: "asA", label: "As a", kind: "text", placeholder: "persona" },
       { name: "iWant", label: "I want to", kind: "text", placeholder: "goal" },
       { name: "soThat", label: "So that", kind: "text", placeholder: "outcome" },
-      { name: "points", label: "Points", kind: "select", options: POINTS },
+      { name: "points", label: "Points (indicative)", kind: "select", options: [...POINTS, "TBD"] },
       { name: "status", label: "Status", kind: "select", options: STORY_STATUS },
       { name: "criteria", label: "Acceptance criteria (one per line)", kind: "textarea", placeholder: "Given a payment fails, when the event arrives, then an email is sent within 60s" },
     ]},
   ]},
   { id: "sprint-sow", title: "Sprint SOW", intro: "Scope the sprint as a statement of work.", fields: [
-    { name: "sprintGoal", label: "Sprint goal", kind: "text", required: true },
+    { name: "preparedBy", label: "Prepared by", kind: "text", placeholder: "PM name" },
+    { name: "version", label: "Version", kind: "text", placeholder: "1.0" },
+    { name: "status", label: "Status", kind: "select", options: ["Draft", "Approved"] },
+    { name: "jiraBoard", label: "Link to the Jira board", kind: "text", placeholder: "https://..." },
+    { name: "sprintGoal", label: "Sprint goal", kind: "textarea", required: true },
     { name: "overview", label: "Overview", kind: "textarea" },
-    { name: "startDate", label: "Start date", kind: "text", placeholder: "YYYY-MM-DD" },
-    { name: "endDate", label: "End date", kind: "text", placeholder: "YYYY-MM-DD" },
+    { name: "startDate", label: "Sprint start", kind: "text", placeholder: "YYYY-MM-DD" },
+    { name: "endDate", label: "Sprint end", kind: "text", placeholder: "YYYY-MM-DD" },
     { name: "team", label: "Sprint team", kind: "list", addLabel: "Add member", itemFields: [
       { name: "member", label: "Team member", kind: "text" },
       { name: "role", label: "Role", kind: "text" },
       { name: "tickets", label: "Assigned tickets", kind: "text" },
     ]},
-    { name: "deliverables", label: "Deliverables", kind: "list", addLabel: "Add deliverable", required: true, itemFields: [
+    { name: "deliverables", label: "Deliverables by theme", kind: "list", addLabel: "Add deliverable", required: true, itemFields: [
+      { name: "theme", label: "Theme", kind: "text" },
+      { name: "ticket", label: "Ticket", kind: "text" },
       { name: "deliverable", label: "Deliverable", kind: "text" },
       { name: "description", label: "Description", kind: "text" },
       { name: "assignee", label: "Assignee", kind: "text" },
+      { name: "estimate", label: "Estimate", kind: "text" },
     ]},
     { name: "outOfScope", label: "Out of scope", kind: "list", addLabel: "Add exclusion", itemFields: [
       { name: "item", label: "Excluded", kind: "text" },
     ]},
+    { name: "dependencies", label: "Dependencies & assumptions", kind: "list", addLabel: "Add dependency", itemFields: [
+      { name: "item", label: "Dependency or assumption", kind: "text" },
+    ]},
     { name: "dod", label: "Definition of Done", kind: "list", addLabel: "Add condition", itemFields: [
       { name: "condition", label: "Condition", kind: "text" },
     ]},
+    { name: "approver", label: "Approval", kind: "text", placeholder: "Approver name, or leave blank for Pending" },
   ]},
   { id: "sprint-planning", title: "Sprint Planning", intro: "Per-person capacity. Committed load is P0 + P1.", fields: [
+    { name: "sprintName", label: "Sprint name", kind: "text", placeholder: "Sprint 1 - Notifications" },
+    { name: "sprintGoal", label: "Sprint goal", kind: "text", required: true },
+    { name: "startDate", label: "Start date", kind: "text", placeholder: "YYYY-MM-DD" },
+    { name: "endDate", label: "End date", kind: "text", placeholder: "YYYY-MM-DD" },
+    { name: "velocityPoints", label: "Velocity baseline (avg pts)", kind: "text", placeholder: "e.g. 20 - leave blank if none" },
+    { name: "velocitySprints", label: "Over how many sprints", kind: "text", placeholder: "e.g. 3" },
     { name: "team", label: "Team capacity", kind: "list", addLabel: "Add person", required: true, itemFields: [
       { name: "person", label: "Person", kind: "text", placeholder: "Name" },
       { name: "availableDays", label: "Available days", kind: "text" },
+      { name: "workingDays", label: "Working days", kind: "text" },
       { name: "points", label: "Usable points", kind: "select", options: POINTS },
       { name: "notes", label: "Notes", kind: "text" },
     ]},
     { name: "backlog", label: "Backlog", kind: "list", addLabel: "Add item", required: true, itemFields: [
       { name: "priority", label: "Priority", kind: "select", options: PRIORITY },
       { name: "item", label: "Item", kind: "text" },
-      { name: "points", label: "Points", kind: "select", options: POINTS },
+      { name: "points", label: "Points", kind: "select", options: [...POINTS, "TBD"] },
       { name: "owner", label: "Owner", kind: "text" },
       { name: "dependencies", label: "Dependencies", kind: "text" },
+      { name: "servesGoal", label: "Serves goal", kind: "select", options: ["Yes", "No"] },
     ]},
   ]},
   { id: "release-checklist", title: "Release Checklist", intro: "Statuses roll up to a verdict.", fields: [
@@ -284,39 +355,60 @@ export const STEPS: OnbStep[] = [
       { name: "category", label: "Category", kind: "select", options: CATEGORIES },
       { name: "item", label: "Check", kind: "text" },
       { name: "status", label: "Status", kind: "select", options: CHECK_STATUS },
+      { name: "owner", label: "Owner", kind: "text" },
+      { name: "due", label: "Deadline", kind: "text" },
+      { name: "acceptedBy", label: "Accepted by (for a FAIL you accept)", kind: "text" },
       { name: "note", label: "Note", kind: "text" },
     ]},
   ]},
-  { id: "sprint-report", title: "Sprint Report", intro: "Mid-sprint status snapshot.", fields: [
+  { id: "sprint-report", title: "Sprint Report", intro: "Sprint status snapshot. Leave confidence blank when days remaining are unknown.", fields: [
     { name: "sprint", label: "Sprint", kind: "text", required: true },
+    { name: "mode", label: "Sprint mode", kind: "select", options: SPRINT_MODE },
     { name: "day", label: "Day of sprint", kind: "text", placeholder: "e.g. 7" },
     { name: "totalDays", label: "Sprint length (days)", kind: "text", placeholder: "e.g. 10" },
     { name: "status", label: "RAG status", kind: "select", options: RAG },
-    { name: "confidence", label: "Confidence (%)", kind: "text", placeholder: "0-100" },
+    { name: "confidence", label: "Confidence (%)", kind: "text", placeholder: "blank if days remaining unknown" },
+    { name: "riskLevel", label: "Risk level", kind: "select", options: RISK_LEVEL },
     { name: "committed", label: "Committed points", kind: "text" },
     { name: "completed", label: "Completed points", kind: "text" },
-    { name: "forecast", label: "Forecast", kind: "textarea" },
+    { name: "goal", label: "Sprint goal", kind: "text", placeholder: "leave blank if none was set" },
+    { name: "goalStatus", label: "Goal attainment", kind: "select", options: GOAL_STATUS },
+    { name: "forecast", label: "Forecast / actuals", kind: "textarea" },
     { name: "summary", label: "Executive summary", kind: "textarea" },
+    { name: "movement", label: "Movement since last report", kind: "text" },
+    { name: "velocityHistory", label: "Velocity history (prior sprints)", kind: "list", addLabel: "Add sprint", itemFields: [
+      { name: "sprint", label: "Sprint", kind: "text" },
+      { name: "points", label: "Points delivered", kind: "text" },
+    ]},
     { name: "priorities", label: "Top PM priorities", kind: "list", addLabel: "Add priority", itemFields: [
       { name: "item", label: "Priority", kind: "text" },
     ]},
     { name: "topRisks", label: "Main risks / blockers", kind: "list", addLabel: "Add risk", itemFields: [
       { name: "risk", label: "Risk", kind: "text" },
     ]},
-    { name: "actionsToday", label: "Actions today", kind: "list", addLabel: "Add action", itemFields: [
+    { name: "actionsToday", label: "Actions today (in flight)", kind: "list", addLabel: "Add action", itemFields: [
       { name: "item", label: "Action", kind: "text" },
     ]},
-    { name: "standup", label: "Questions for standup", kind: "list", addLabel: "Add question", itemFields: [
+    { name: "standup", label: "Questions for standup (in flight)", kind: "list", addLabel: "Add question", itemFields: [
       { name: "item", label: "Question", kind: "text" },
     ]},
+    { name: "carryover", label: "Carry-over (closed sprints)", kind: "list", addLabel: "Add item", itemFields: [
+      { name: "item", label: "Item", kind: "text" },
+    ]},
+    { name: "nextSprintImplications", label: "Next sprint implications (closed)", kind: "textarea" },
+    { name: "leadershipUpdate", label: "Leadership update", kind: "textarea" },
   ]},
-  { id: "decision-log", title: "Decision Log", intro: "Record scope/plan changes with impact.", fields: [
+  { id: "decision-log", title: "Decision Log", intro: "One running register. Each decision gets an ID, a date, and an audit trail.", fields: [
     { name: "project", label: "Project", kind: "text" },
+    { name: "preparedBy", label: "Prepared by", kind: "text" },
+    { name: "version", label: "Register version", kind: "text", placeholder: "e.g. 1.3" },
     { name: "entries", label: "Decisions", kind: "list", addLabel: "Add decision", required: true, itemFields: [
+      { name: "date", label: "Date decided", kind: "text", placeholder: "YYYY-MM-DD" },
+      { name: "title", label: "Decision title", kind: "text" },
       { name: "area", label: "Area", kind: "select", options: DECISION_AREA },
       { name: "originalPlan", label: "Original plan", kind: "text" },
       { name: "revisedPlan", label: "Revised plan", kind: "text" },
-      { name: "reason", label: "Reason", kind: "text" },
+      { name: "reason", label: "Reason (note any rejected options)", kind: "text" },
       { name: "changeProposedBy", label: "Proposed by", kind: "text" },
       { name: "deliveryImpact", label: "Delivery impact", kind: "text" },
       { name: "technicalImpact", label: "Technical impact", kind: "text" },
@@ -324,6 +416,11 @@ export const STEPS: OnbStep[] = [
       { name: "costImpact", label: "Cost impact", kind: "text" },
       { name: "changeStatus", label: "Status", kind: "select", options: CHANGE_STATUS },
       { name: "changeApprovedBy", label: "Approved by", kind: "text" },
+      { name: "supersedes", label: "Supersedes (D-00X)", kind: "text" },
+      { name: "followUps", label: "Follow-ups (SOW/CR, stale artefacts, comms)", kind: "text" },
+    ]},
+    { name: "discussed", label: "Discussed, not decided", kind: "list", addLabel: "Add item", itemFields: [
+      { name: "item", label: "Floated idea", kind: "text" },
     ]},
   ]},
   { id: "meeting-notes", title: "Meeting Minutes", intro: "Header, agenda, and notes - export-ready.", fields: [
@@ -335,32 +432,41 @@ export const STEPS: OnbStep[] = [
     { name: "agenda", label: "Agenda", kind: "list", addLabel: "Add agenda item", itemFields: [
       { name: "item", label: "Agenda item", kind: "text" },
     ]},
-    { name: "notes", label: "Notes / discussion", kind: "list", addLabel: "Add note", itemFields: [
+    { name: "notes", label: "Key discussion points", kind: "list", addLabel: "Add point", itemFields: [
       { name: "note", label: "Description", kind: "textarea" },
     ]},
     { name: "decisions", label: "Decisions", kind: "list", addLabel: "Add decision", itemFields: [
       { name: "decision", label: "Decision", kind: "text" },
     ]},
     { name: "actions", label: "Action items", kind: "list", addLabel: "Add action", itemFields: [
-      { name: "who", label: "Who", kind: "text" },
+      { name: "who", label: "Who (or Unassigned)", kind: "text" },
       { name: "what", label: "What", kind: "text" },
       { name: "when", label: "By when", kind: "text" },
     ]},
     { name: "openQuestions", label: "Open questions", kind: "list", addLabel: "Add question", itemFields: [
       { name: "question", label: "Question", kind: "text" },
     ]},
+    { name: "followUps", label: "Want to dig deeper?", kind: "list", addLabel: "Add question", itemFields: [
+      { name: "question", label: "Question", kind: "text" },
+    ]},
   ]},
-  { id: "tech-review", title: "Tech Review", intro: "Feasibility, delivery risks, SA questions.", fields: [
+  { id: "tech-review", title: "Tech Review", intro: "Feasibility verdict, delivery risks, SA questions.", fields: [
+    { name: "project", label: "Project", kind: "text" },
     { name: "documentType", label: "Document type", kind: "text", placeholder: "e.g. Architecture proposal" },
+    { name: "verdict", label: "Feasibility verdict", kind: "select", options: FEASIBILITY_VERDICT },
     { name: "summary", label: "Plain-English summary", kind: "textarea", required: true },
     { name: "implications", label: "Delivery implications", kind: "list", addLabel: "Add implication", itemFields: [
       { name: "item", label: "Implication", kind: "text" },
     ]},
+    { name: "estimate", label: "Estimate assessment (includes / excludes, basis)", kind: "textarea" },
+    { name: "cost", label: "Cost / commercial", kind: "textarea" },
     { name: "risks", label: "Risks surfaced", kind: "list", addLabel: "Add risk", itemFields: [
       { name: "risk", label: "Risk", kind: "text" },
       { name: "likelihood", label: "Likelihood", kind: "select", options: HML },
       { name: "impact", label: "Impact", kind: "select", options: HML },
+      { name: "note", label: "Note", kind: "text" },
     ]},
+    { name: "topRisk", label: "Top risk to act on now", kind: "textarea" },
     { name: "dependencies", label: "Dependencies", kind: "list", addLabel: "Add dependency", itemFields: [
       { name: "dependency", label: "Dependency", kind: "text" },
     ]},
@@ -368,36 +474,50 @@ export const STEPS: OnbStep[] = [
       { name: "question", label: "Question", kind: "text" },
     ]},
     { name: "scopeImplications", label: "Scope implications", kind: "textarea" },
-    { name: "verdict", label: "Feasibility verdict", kind: "text" },
   ]},
-  { id: "retrospective", title: "Retrospective", intro: "What went well, what didn't, owned actions.", fields: [
+  { id: "retrospective", title: "Retrospective", intro: "Depersonalised themes, owned actions, escalations.", fields: [
     { name: "sprint", label: "Sprint", kind: "text" },
     { name: "outcome", label: "Sprint outcome", kind: "text" },
-    { name: "attendees", label: "Attendees", kind: "tags", placeholder: "Type a name and press Enter" },
+    { name: "sprintFacts", label: "Sprint facts (committed vs done, carryover, incidents)", kind: "text" },
+    { name: "attendees", label: "Attendees (roles, not names)", kind: "tags", placeholder: "Type a role and press Enter" },
+    { name: "priorActions", label: "Prior actions review", kind: "list", addLabel: "Add prior action", itemFields: [
+      { name: "action", label: "Last retro action", kind: "text" },
+      { name: "owner", label: "Owner", kind: "text" },
+      { name: "done", label: "Done?", kind: "select", options: ["Yes", "No", "Partial"] },
+    ]},
     { name: "wentWell", label: "What went well", kind: "list", addLabel: "Add item", itemFields: [
       { name: "item", label: "Item", kind: "text" },
     ]},
     { name: "didnt", label: "What didn't", kind: "list", addLabel: "Add item", itemFields: [
-      { name: "item", label: "Theme / what happened", kind: "text" },
+      { name: "theme", label: "Theme", kind: "text" },
+      { name: "whatHappened", label: "What happened (blameless)", kind: "text" },
       { name: "impact", label: "Impact", kind: "text" },
+      { name: "recurring", label: "Recurring?", kind: "select", options: ["No", "Yes"] },
     ]},
     { name: "actions", label: "Action items", kind: "list", addLabel: "Add action", itemFields: [
       { name: "action", label: "Action", kind: "text" },
       { name: "owner", label: "Owner", kind: "text" },
       { name: "by", label: "By when", kind: "text" },
+      { name: "addresses", label: "Addresses (theme #)", kind: "text" },
+      { name: "escalation", label: "Escalation?", kind: "select", options: ["No", "Yes"] },
     ]},
-    { name: "sentiment", label: "Team sentiment", kind: "text" },
+    { name: "parked", label: "Parked - revisit if it recurs", kind: "list", addLabel: "Add parked item", itemFields: [
+      { name: "item", label: "Item", kind: "text" },
+    ]},
+    { name: "sentiment", label: "Team sentiment", kind: "textarea" },
   ]},
-  { id: "stakeholder-update", title: "Stakeholder Update", intro: "Audience-ready status comms.", fields: [
+  { id: "stakeholder-update", title: "Stakeholder Update", intro: "Audience-ready status comms with a RAG trend.", fields: [
     { name: "audience", label: "Audience", kind: "text" },
     { name: "status", label: "Overall status", kind: "select", options: UPDATE_STATUS },
-    { name: "headline", label: "Headline", kind: "textarea", required: true },
+    { name: "previousStatus", label: "Previous status (for the trend)", kind: "select", options: UPDATE_STATUS },
+    { name: "headline", label: "Headline (impact, recovery, ask when at risk)", kind: "textarea", required: true },
     { name: "progress", label: "Progress since last update", kind: "list", addLabel: "Add item", itemFields: [
       { name: "item", label: "Update", kind: "text" },
     ]},
     { name: "comingNext", label: "Coming next", kind: "list", addLabel: "Add item", itemFields: [
       { name: "item", label: "Next", kind: "text" },
     ]},
+    { name: "budget", label: "Budget", kind: "textarea", placeholder: "Spend vs budget and trajectory, or leave blank" },
     { name: "risks", label: "Risks & issues", kind: "list", addLabel: "Add risk", itemFields: [
       { name: "risk", label: "Item", kind: "text" },
       { name: "impact", label: "Impact", kind: "text" },
@@ -411,28 +531,83 @@ export const STEPS: OnbStep[] = [
     { name: "keyDates", label: "Key dates", kind: "list", addLabel: "Add date", itemFields: [
       { name: "milestone", label: "Milestone", kind: "text" },
       { name: "date", label: "Date", kind: "text" },
+      { name: "was", label: "Was (previous date)", kind: "text" },
     ]},
+    { name: "nextUpdate", label: "Next update", kind: "text", placeholder: "YYYY-MM-DD" },
   ]},
-  { id: "roadmap", title: "Roadmap", intro: "Sprint/week timeline. Tasks render as bars.", fields: [
+  { id: "roadmap", title: "Roadmap", intro: "Now / Next / Later buckets, with an optional horizon timeline.", fields: [
     { name: "goal", label: "Goal", kind: "text", required: true },
-    { name: "horizon", label: "Horizon", kind: "text", placeholder: "e.g. Next 8 weeks" },
-    { name: "weeks", label: "Total weeks", kind: "select", options: WEEKS },
-    { name: "tasks", label: "Tasks", kind: "list", addLabel: "Add task", required: true, itemFields: [
-      { name: "name", label: "Task", kind: "text" },
-      { name: "lane", label: "Sprint / lane", kind: "text", placeholder: "e.g. Sprint 1" },
+    { name: "horizon", label: "Horizon", kind: "text", placeholder: "e.g. Next 2 quarters" },
+    { name: "confidence", label: "Confidence note", kind: "text", placeholder: "Near-term firm, later directional" },
+    { name: "nextReview", label: "Next review", kind: "text", placeholder: "date or trigger" },
+    { name: "items", label: "Initiatives (Now / Next / Later)", kind: "list", addLabel: "Add initiative", required: true, itemFields: [
+      { name: "bucket", label: "Bucket", kind: "select", options: ROADMAP_BUCKET },
+      { name: "initiative", label: "Initiative", kind: "text" },
+      { name: "theme", label: "Theme", kind: "text" },
+      { name: "confidence", label: "Confidence", kind: "select", options: RM_CONFIDENCE },
+      { name: "size", label: "Size (optional)", kind: "select", options: RM_SIZE },
+      { name: "note", label: "Why now / depends on / open question", kind: "text" },
+    ]},
+    { name: "weeks", label: "Timeline weeks (optional)", kind: "select", options: WEEKS },
+    { name: "tasks", label: "Timeline items (optional)", kind: "list", addLabel: "Add item", itemFields: [
+      { name: "name", label: "Item", kind: "text" },
+      { name: "lane", label: "Bucket / lane", kind: "text", placeholder: "e.g. Now" },
       { name: "startWeek", label: "Start week", kind: "select", options: WEEKNUM },
       { name: "endWeek", label: "End week", kind: "select", options: WEEKNUM },
       { name: "startDate", label: "Start date", kind: "text", placeholder: "optional, e.g. 2026-06-09" },
       { name: "endDate", label: "End date", kind: "text", placeholder: "optional" },
     ]},
   ]},
-  { id: "budget-tracker", title: "Budget Tracker", intro: "Developer costs mapped against the budget.", fields: [
+  { id: "budget-tracker", title: "Budget Tracker", intro: "Spend vs baseline, forecast at completion, RAG verdict.", fields: [
     { name: "project", label: "Project", kind: "text" },
-    { name: "budget", label: "Total approved budget", kind: "text", placeholder: "e.g. 80000" },
+    { name: "budget", label: "Original budget", kind: "text", placeholder: "e.g. 80000" },
+    { name: "approvedChanges", label: "Approved changes (change orders)", kind: "text", placeholder: "e.g. 5000, or blank" },
+    { name: "approvedChangesRef", label: "Change order ref (decision log)", kind: "text", placeholder: "e.g. D-002" },
+    { name: "committed", label: "Committed but unbilled", kind: "text", placeholder: "e.g. 4000" },
+    { name: "commercialModel", label: "Commercial model", kind: "select", options: COMMERCIAL_MODEL },
+    { name: "scopeComplete", label: "Scope complete (%)", kind: "text", placeholder: "0-100" },
+    { name: "timeElapsed", label: "Time elapsed (%)", kind: "text", placeholder: "0-100" },
+    { name: "plannedStart", label: "Planned start", kind: "text", placeholder: "YYYY-MM-DD" },
+    { name: "plannedEnd", label: "Planned end", kind: "text", placeholder: "YYYY-MM-DD" },
     { name: "developers", label: "Developers", kind: "list", addLabel: "Add developer", required: true, itemFields: [
       { name: "name", label: "Developer", kind: "text" },
       { name: "hours", label: "Hours", kind: "text" },
       { name: "rate", label: "Cost / hour", kind: "text" },
+    ]},
+  ]},
+  { id: "onboarding", title: "Onboarding Brief", intro: "A sendable starter brief for a new joiner. Most of it auto-fills from this project's artefacts and refreshes each time you open it. Only the fields marked 'you fill this' need a person, and those are the ones that persist. Download it as a PDF to email the joiner.", fields: [
+    { name: "role", label: "Joiner role", kind: "text", required: true, human: true, placeholder: "dev / QA / PM / designer" },
+    { name: "client", label: "Client", kind: "text", auto: true },
+    { name: "phase", label: "Current phase", kind: "text", auto: true },
+    { name: "sensitivities", label: "Handle with care (from client.md)", kind: "text", human: true },
+    { name: "summary", label: "In one paragraph", kind: "textarea", auto: true },
+    { name: "whereWeAre", label: "Where we are now", kind: "list", addLabel: "Add line", auto: true, itemFields: [
+      { name: "item", label: "Line", kind: "text" },
+    ]},
+    { name: "howWeWork", label: "How we work (cadence, comms, where work lives)", kind: "list", addLabel: "Add line", human: true, itemFields: [
+      { name: "item", label: "Line", kind: "text" },
+    ]},
+    { name: "whosWho", label: "Who's who", kind: "list", addLabel: "Add person", auto: true, itemFields: [
+      { name: "who", label: "Name / role", kind: "text" },
+      { name: "owns", label: "What they own", kind: "text" },
+      { name: "goTo", label: "When to go to them", kind: "text" },
+    ]},
+    { name: "readFirst", label: "What to read first (in order)", kind: "list", addLabel: "Add doc", auto: true, itemFields: [
+      { name: "item", label: "Doc + date", kind: "text" },
+    ]},
+    { name: "decisions", label: "Key decisions already made", kind: "list", addLabel: "Add decision", auto: true, itemFields: [
+      { name: "item", label: "Decision", kind: "text" },
+    ]},
+    { name: "risks", label: "Live risks & open questions", kind: "list", addLabel: "Add item", auto: true, itemFields: [
+      { name: "item", label: "Risk / question", kind: "text" },
+      { name: "why", label: "Why it matters", kind: "text" },
+    ]},
+    { name: "roleStart", label: "Role-specific starting points", kind: "list", addLabel: "Add item", human: true, itemFields: [
+      { name: "item", label: "Starting point", kind: "text" },
+    ]},
+    { name: "checklist", label: "First-week checklist", kind: "list", addLabel: "Add item", human: true, itemFields: [
+      { name: "item", label: "Item", kind: "text" },
+      { name: "grantedBy", label: "Granted by (+ lead time)", kind: "text" },
     ]},
   ]},
 ];
@@ -440,6 +615,7 @@ export const STEPS: OnbStep[] = [
 /** Pre-filled test data so every section is ready to view. */
 export const TEST_DATA: OnbData = {
   triage: {
+    requester: "Sarah, client VP Product, via email on 12 May, relayed through our account manager. Sarah is the cited authority, not the sender.",
     requestSummary: "Enterprise clients discover failed payments reactively (via customer calls) rather than proactively. Sarah is asking for real-time payment failure notifications.",
     businessGoal: "Reduce client churn and support burden by giving enterprise customers visibility into payment failures before their end-customers complain.",
     stakeholderNeed: "Enterprise clients need to know about payment failures the moment they occur.",
@@ -450,18 +626,20 @@ export const TEST_DATA: OnbData = {
       { point: "Budget: ~$80k" },
     ],
     missingInfo: [
-      { point: "Channels (email / SMS / webhook / in-app)?" },
-      { point: "Events beyond failures (partial, reversals, retries)?" },
-      { point: "Who receives the notification?" },
-      { point: "Existing infra to build on?" },
-      { point: "Is 6 weeks for MVP or full feature?" },
+      { question: "Channels (email / SMS / webhook / in-app)?", audience: "Ask requester" },
+      { question: "Events beyond failures (partial, reversals, retries)?", audience: "Ask requester" },
+      { question: "Who receives the notification?", audience: "Ask requester" },
+      { question: "Existing infra to build on?", audience: "Check internally" },
+      { question: "Is 6 weeks for MVP or full feature?", audience: "Ask requester" },
     ],
     concerns: [
       { point: '"Real-time" undefined (30s vs 5min)' },
       { point: "6 weeks is aggressive" },
       { point: "$80k may not cover full scope" },
     ],
-    classification: "New Feature - Medium/High complexity",
+    urgency: "6 weeks tied to the Salesforce conference. Reads as a real external deadline - confirm the conference date is fixed.",
+    impact: "Not checked - no project context",
+    classification: "Needs Clarification",
     nextStep: "Run a discovery session with Sarah and the tech lead.",
   },
   "risk-scan": {
@@ -478,20 +656,37 @@ export const TEST_DATA: OnbData = {
     sponsor: "Sarah Chen (Head of Product)",
     objectives: [{ objective: "Notify within 60s of a payment event" }, { objective: "Reduce payment-related support tickets by 40%" }],
     inScope: [{ item: "Email notifications for payment failure events" }, { item: "Configurable recipients per account" }, { item: "Failure, retry and resolution events" }],
-    outOfScope: [{ item: "SMS and push notifications" }, { item: "Webhook delivery (phase 2)" }, { item: "End-user notifications" }],
+    outOfScope: [{ item: "SMS and push notifications" }, { item: "Webhook delivery (phase 2)" }, { item: "End-user notifications [proposed - confirm]" }],
     deliverables: [
       { deliverable: "Notification engine (email)", due: "Sprint 1" },
       { deliverable: "Recipient management", due: "Sprint 2" },
+    ],
+    governance: [
+      { item: "Decision authority", detail: "Sarah Chen - final call on scope, budget, and timeline" },
+      { item: "Change approval", detail: "Material scope, budget, or timeline changes need sponsor sign-off, recorded via /decision-log" },
+      { item: "Reporting cadence", detail: "Weekly one-page status update to the sponsor" },
     ],
     milestones: [
       { milestone: "Charter sign-off", date: "2026-06-02" },
       { milestone: "Email MVP to staging", date: "2026-06-20" },
       { milestone: "Conference demo", date: "2026-07-13" },
     ],
-    budget: [{ item: "Engineering (4 people, 6 weeks)", amount: "$72k" }, { item: "SendGrid + infra", amount: "$8k" }],
+    budget: [
+      { item: "Estimated delivery cost", amount: "$80k" },
+      { item: "Contingency (10-15%)", amount: "$10k" },
+      { item: "Commercial basis", amount: "Time and materials, invoiced monthly [assumed]" },
+      { item: "Includes / excludes", amount: "SendGrid and infra included; third-party licences excluded [assumed]" },
+      { item: "Budget owner", amount: "Sarah Chen" },
+    ],
     risks: [
       { risk: "Event streaming infra not in place", likelihood: "M", impact: "H", response: "Spike in Week 1" },
       { risk: "6-week deadline for MVP only", likelihood: "H", impact: "H", response: "Confirm scope with Sarah" },
+    ],
+    constraints: [{ constraint: "Must demo at the Salesforce conference on 13 July" }],
+    assumptions: [{ assumption: "[assumed] Dev team of 4 is available from Month 1" }, { assumption: "[assumed] Kafka event layer is already in production" }],
+    clientDependencies: [
+      { dependency: "Access to the payment event stream (Kafka)", neededBy: "Week 1", owner: "Client platform team" },
+      { dependency: "Enterprise recipient lists for configuration", neededBy: "Sprint 2", owner: "Client account managers" },
     ],
     approvals: [{ role: "Sponsor", name: "Sarah Chen" }, { role: "Tech Lead", name: "Marcus Reid" }, { role: "Project Manager", name: "" }],
   },
@@ -499,13 +694,13 @@ export const TEST_DATA: OnbData = {
     problem: "Enterprise clients have no proactive signal for payment failures, so they learn from their own customers. The root need is a timely, configurable alert, not a dashboard.",
     success: "A notification is delivered within 60 seconds of a payment event to the right account contacts.",
     affected: [
-      { stakeholder: "Enterprise finance teams", pain: "Find out about failures from angry customers" },
-      { stakeholder: "Finwave support", pain: "High volume of avoidable tickets" },
+      { stakeholder: "Enterprise finance teams", pain: "Find out about failures from angry customers", impact: "Reputational hit and churn risk on high-value accounts" },
+      { stakeholder: "Finwave support", pain: "High volume of avoidable tickets", impact: "~30% of inbound tickets are failure chasers" },
     ],
     findings: [
-      { finding: "Kafka event layer already exists and can be reused", confidence: "High" },
-      { finding: "MVP is email plus in-app, and in-app is a stretch", confidence: "High" },
-      { finding: "Recipients configured at account level, not per user", confidence: "Medium" },
+      { finding: "Kafka event layer already exists and can be reused", source: "Marcus (Tech Lead)", confidence: "High" },
+      { finding: "MVP is email plus in-app, and in-app is a stretch", source: "Sarah (Sponsor)", confidence: "High" },
+      { finding: "Recipients configured at account level, not per user", source: "session notes - unattributed", confidence: "Medium" },
     ],
     conflicts: [{ conflict: "Sarah wants webhooks soon, and engineering wants email-only for MVP" }],
     unknowns: [
@@ -516,6 +711,7 @@ export const TEST_DATA: OnbData = {
       { action: "Confirm Kafka consumer for payment events", owner: "Marcus", by: "2026-06-03" },
       { action: "Circulate charter for sign-off", owner: "PM", by: "2026-06-02" },
     ],
+    readiness: "Not ready for charter and requirements. Blocked on the webhook-versus-email scope conflict and unconfirmed email failure handling. Resolve both before requirements are written.",
     attendees: ["PM", "Tech lead", "QA lead", "Sponsor"],
   },
   prd: {
@@ -525,8 +721,8 @@ export const TEST_DATA: OnbData = {
     ],
     background: "Enterprise clients need proactive notification of payment failures. This PRD covers the email MVP delivered on the existing Kafka event bus, with configurable recipients per account.",
     goals: [
-      { goal: "Proactive failure notifications", metric: "Event-to-email time", target: "< 60s" },
-      { goal: "Reduce support tickets", metric: "Payment-confusion tickets", target: "-40% in 60 days" },
+      { goal: "Proactive failure notifications", metric: "Event-to-email time", baseline: "No proactive alert today", target: "< 60s" },
+      { goal: "Reduce support tickets", metric: "Payment-confusion tickets", baseline: "~900 per month", target: "-40% in 60 days" },
     ],
     users: [
       { role: "Enterprise admin", who: "Manages the client's account settings", need: "Configure who receives notifications" },
@@ -540,6 +736,10 @@ export const TEST_DATA: OnbData = {
       { constraint: "Must reuse the existing Kafka event bus (no new infrastructure)." },
       { constraint: "Launch before the industry conference in 6 weeks." },
     ],
+    journeys: [
+      { journey: "Configure recipients", steps: "1. Admin opens account settings\n2. Adds or edits the notification recipient list\n3. Saves, and the change takes effect on the next event" },
+      { journey: "Receive a failure alert", steps: "1. A payment_failed event fires on Kafka\n2. The service sends an email to the configured recipients within 60s\n3. The recipient opens the email and sees the failure detail and next step" },
+    ],
     functional: [
       { requirement: "Send email within 60s of payment_failed", priority: "Must", notes: "Kafka consumer triggers this" },
       { requirement: "Configurable recipients per account", priority: "Must", notes: "Account settings screen" },
@@ -552,7 +752,7 @@ export const TEST_DATA: OnbData = {
     ],
     outOfScope: [{ item: "SMS / push" }, { item: "Webhook delivery (phase 2)" }, { item: "Custom templates per client" }],
     dependencies: [
-      { dependency: "Kafka payment topic", type: "Internal platform", owner: "Platform", status: "Available" },
+      { dependency: "Kafka payment topic", type: "Internal platform", owner: "Platform", status: "Confirmed" },
       { dependency: "SendGrid prod API key", type: "Third-party API", owner: "Infra", status: "Pending" },
     ],
     openQuestions: [
@@ -568,36 +768,36 @@ export const TEST_DATA: OnbData = {
     epics: [
       { name: "Payment Event Notification Engine", stories: [
         {
-          title: "Consume payment events from Kafka", points: "5", status: "In Progress",
+          title: "Consume payment events from Kafka", priority: "Must", linkedRequirement: "FR-01", points: "5", status: "In Progress",
           asA: "notification service", iWant: "consume payment_failed, retried and resolved events", soThat: "I can trigger notifications in real time",
           criteria: "Given a payment_failed event is published, when the consumer reads it, then a notification job is queued within 5 seconds\nGiven a duplicate event id, when read again, then no second job is queued (Redis dedup)\nGiven the consumer reconnects, then it resumes from its last committed offset without skipping events",
         },
         {
-          title: "Send email via SendGrid", points: "5", status: "To Do",
+          title: "Send email via SendGrid", priority: "Must", linkedRequirement: "FR-03", points: "TBD", status: "To Do",
           asA: "enterprise client contact", iWant: "receive an email when a payment event occurs", soThat: "I learn about failures before my customers call",
           criteria: "Given a queued notification job, when processed, then an email is sent within 60 seconds of the event\nGiven SendGrid returns a 5xx, then the job retries up to 3 times then dead-letters\nError: on permanent failure, log the event id and surface it in the delivery report",
         },
         {
-          title: "Recipient lookup service", points: "3", status: "To Do",
+          title: "Recipient lookup service", priority: "Must", linkedRequirement: "FR-02", points: "3", status: "To Do",
           asA: "notification service", iWant: "resolve the configured recipients for an account", soThat: "emails reach the right people",
           criteria: "Given an account id, when looked up, then all active recipients are returned\nGiven no recipients configured, then the event is logged and no email is sent",
         },
         {
-          title: "Email templates", points: "2", status: "To Do",
+          title: "Email templates", priority: "Should", linkedRequirement: "None", points: "2", status: "To Do",
           asA: "client contact", iWant: "a clear, branded failure email", soThat: "I can act quickly",
           criteria: "Given a payment_failed event, then the email shows amount, account, failure reason and timestamp\nCopy is approved by Sarah before release",
         },
       ]},
       { name: "Notification Recipient Management", stories: [
         {
-          title: "Account settings screen", points: "3", status: "To Do",
+          title: "Account settings screen", priority: "Must", linkedRequirement: "FR-05", points: "3", status: "To Do",
           asA: "enterprise admin", iWant: "add or remove notification recipients", soThat: "the right team is alerted",
           criteria: "Given the settings screen, when I add a valid email, then it appears in the recipient list\nGiven an invalid email, then show \"Enter a valid email address\" and do not save\nGiven I remove a recipient, then they stop receiving notifications immediately",
         },
       ]},
       { name: "Notification History (stretch)", stories: [
         {
-          title: "Notification history endpoint", points: "3", status: "To Do",
+          title: "Notification history endpoint", priority: "Could", linkedRequirement: "None", points: "3", status: "To Do",
           asA: "enterprise admin", iWant: "see the last 30 days of notifications", soThat: "I can audit what was sent",
           criteria: "Given the history view, then notifications from the last 30 days are listed newest first\nGiven zero notifications, then show \"No notifications in the last 30 days\"",
         },
@@ -605,61 +805,94 @@ export const TEST_DATA: OnbData = {
     ],
   },
   "sprint-sow": {
+    preparedBy: "Nadia Rahman",
+    version: "1.0",
+    status: "Draft",
+    jiraBoard: "https://finwave.atlassian.net/jira/software/projects/NOTIF/boards/12",
     sprintGoal: "Deliver a working payment notification engine that sends emails within 60s, with deduplication.",
     overview: "Sprint 1 establishes the Kafka consumer, the SendGrid email path, and Redis deduplication. Recipient management and the in-app centre are out of scope for this sprint.",
     startDate: "2026-06-09",
     endDate: "2026-06-20",
     team: [
-      { member: "Marcus", role: "BE", tickets: "NOTIF-2, NOTIF-4" },
-      { member: "Aiko", role: "BE", tickets: "NOTIF-3, NOTIF-5" },
-      { member: "Priya", role: "QA", tickets: "All" },
+      { member: "Marcus Webb", role: "Backend Engineer", tickets: "NOTIF-2, NOTIF-4" },
+      { member: "Aiko Tanaka", role: "Backend Engineer", tickets: "NOTIF-3" },
+      { member: "Priya Nair", role: "QA Engineer", tickets: "NOTIF-8" },
     ],
     deliverables: [
-      { deliverable: "Kafka consumer", description: "Consumes payment events, dedups via Redis", assignee: "Marcus" },
-      { deliverable: "SendGrid integration", description: "Sends event emails with retry", assignee: "Aiko" },
-      { deliverable: "Recipient lookup service", description: "Resolves account recipients", assignee: "Marcus" },
+      { theme: "Event Consumption", ticket: "NOTIF-2", deliverable: "Kafka consumer", description: "Consumes payment events and dedups via Redis", assignee: "Marcus Webb", estimate: "5" },
+      { theme: "Email Delivery", ticket: "NOTIF-3", deliverable: "SendGrid integration", description: "Sends event emails with retry and bounce handling", assignee: "Aiko Tanaka", estimate: "5" },
+      { theme: "Email Delivery", ticket: "NOTIF-4", deliverable: "Recipient lookup service", description: "Resolves the account recipients for each event", assignee: "Marcus Webb", estimate: "3" },
+      { theme: "Quality Assurance", ticket: "NOTIF-8", deliverable: "End-to-end test plan", description: "Covers consumption, dedup, and delivery across all event types", assignee: "Priya Nair", estimate: "" },
     ],
-    outOfScope: [{ item: "Recipient management UI (Sprint 2)" }, { item: "In-app notification centre (stretch)" }],
+    outOfScope: [
+      { item: "Recipient management UI - deferred to Sprint 2 (NOTIF-7)" },
+      { item: "In-app notification centre - stretch (NOTIF-10)" },
+    ],
+    dependencies: [
+      { item: "SendGrid production API key - owed by Infra, needed before sprint start" },
+      { item: "Kafka payment topic access is confirmed and stable" },
+    ],
     dod: [
       { condition: "Code reviewed and merged to main" },
       { condition: "Unit and integration tests passing in CI" },
       { condition: "Email delivery confirmed in staging for all 3 event types" },
       { condition: "Redis dedup verified - no duplicate sends on replay" },
-      { condition: "QA sign-off from Priya" },
+      { condition: "QA sign-off from Priya Nair" },
     ],
+    approver: "Sarah Chen",
   },
   "sprint-planning": {
+    sprintName: "Sprint 1 - Notifications",
+    sprintGoal: "Ship the payment notification engine so clients are emailed within 60s of a payment event.",
+    startDate: "2026-06-09",
+    endDate: "2026-06-20",
+    velocityPoints: "20",
+    velocitySprints: "3",
     team: [
-      { person: "Marcus (BE)", availableDays: "10", points: "13", notes: "Full availability" },
-      { person: "Aiko (BE)", availableDays: "9", points: "13", notes: "1 day PTO" },
-      { person: "Priya (QA)", availableDays: "10", points: "8", notes: "QA, not story points" },
-      { person: "Lin (FE, 50%)", availableDays: "5", points: "5", notes: "50% allocated" },
+      { person: "Marcus", availableDays: "8", workingDays: "10", points: "13", notes: "Full sprint, BE" },
+      { person: "Aiko", availableDays: "7", workingDays: "10", points: "13", notes: "1 day PTO, BE" },
+      { person: "Priya", availableDays: "6", workingDays: "10", points: "8", notes: "Part-time, QA" },
     ],
     backlog: [
-      { priority: "P0", item: "NOTIF-2 Kafka consumer", points: "5", owner: "Marcus", dependencies: "Redis provisioned" },
-      { priority: "P0", item: "NOTIF-3 SendGrid integration", points: "5", owner: "Aiko", dependencies: "API key in prod" },
-      { priority: "P1", item: "NOTIF-4 Recipient lookup", points: "3", owner: "Marcus" },
-      { priority: "P1", item: "NOTIF-5 Email templates", points: "2", owner: "Aiko", dependencies: "Copy from Sarah" },
-      { priority: "P2", item: "NOTIF-6 History endpoint", points: "3", owner: "Lin" },
+      { priority: "P0", item: "NOTIF-2 Kafka consumer", points: "5", owner: "Marcus", dependencies: "Redis provisioned", servesGoal: "Yes" },
+      { priority: "P0", item: "NOTIF-3 SendGrid integration", points: "5", owner: "Aiko", dependencies: "API key in prod - unconfirmed", servesGoal: "Yes" },
+      { priority: "P1", item: "NOTIF-4 Recipient lookup", points: "3", owner: "Marcus", servesGoal: "Yes" },
+      { priority: "P1", item: "NOTIF-5 Email templates", points: "TBD", owner: "Aiko", dependencies: "Copy from Sarah", servesGoal: "Yes" },
+      { priority: "P1", item: "NOTIF-8 QA test plan", points: "3", owner: "Priya", servesGoal: "Yes" },
+      { priority: "P1", item: "NOTIF-1 Auth bug fix (carryover)", points: "2", owner: "Aiko", servesGoal: "No" },
+      { priority: "P2", item: "NOTIF-6 History endpoint", points: "8", owner: "Aiko" },
     ],
   },
   "release-checklist": {
     release: "Notifications v1 (email + webhooks)",
     releaseType: "planned",
-    targetDate: "2026-07-03",
+    targetDate: "2026-07-03 18:00 AEST",
     items: [
-      { category: "Feature Readiness", item: "All in-scope stories Done", status: "FAIL", note: "NOTIF-7, NOTIF-8 still in QA" },
-      { category: "Testing", item: "QA sign-off received", status: "RISK", note: "Webhooks outstanding" },
-      { category: "Operational Readiness", item: "Rollback plan reviewed", status: "UNCONFIRMED", note: "Exists but unreviewed" },
-      { category: "Approvals", item: "PM sign-off", status: "PASS" },
+      { category: "Feature Readiness", item: "All in-scope stories Done", status: "PASS", owner: "Priya" },
+      { category: "Testing", item: "QA sign-off received (webhooks)", status: "UNCONFIRMED", owner: "Priya", due: "2026-07-03 16:00", note: "Webhooks outstanding" },
+      { category: "Testing", item: "Security review of webhook signing", status: "UNCONFIRMED", owner: "Sofia (Security)", note: "Touches auth" },
+      { category: "Testing", item: "Load testing under peak", status: "FAIL", owner: "Marcus", acceptedBy: "Sarah Chen", note: "SendGrid peak volume unproven" },
+      { category: "Operational Readiness", item: "Rollback plan reviewed", status: "UNCONFIRMED", owner: "Marcus", due: "2026-07-02 EOD" },
+      { category: "Operational Readiness", item: "Release window sane (Friday 18:00)", status: "RISK", owner: "Marcus", note: "Friday evening - on-call confirmed" },
+      { category: "Operational Readiness", item: "Deploy owner named", status: "PASS", owner: "Marcus" },
+      { category: "Operational Readiness", item: "Deploy sequence agreed (config, migration, code)", status: "PASS", owner: "Marcus" },
+      { category: "Approvals", item: "PM sign-off", status: "PASS", owner: "PM" },
     ],
   },
   "sprint-report": {
     sprint: "Sprint 1 - Notifications",
-    day: "7", totalDays: "10", status: "amber", confidence: "72",
+    mode: "In flight",
+    day: "7", totalDays: "10", status: "amber", confidence: "72", riskLevel: "High",
     committed: "18", completed: "7",
+    goal: "Ship the email notification MVP for all three payment event types.",
+    goalStatus: "At risk",
     forecast: "4 of 5 items likely complete (NOTIF-6 at risk).",
     summary: "Sprint 1 is on track for the P0 items but NOTIF-6 is blocked on an infra misconfiguration. NOTIF-4 has not started and must begin today to finish by sprint end.",
+    movement: "Confidence down from 80% on Day 3 - the NOTIF-6 blocker is still open.",
+    velocityHistory: [
+      { sprint: "Sprint -2", points: "16" },
+      { sprint: "Sprint -1", points: "14" },
+    ],
     priorities: [
       { item: "Escalate the Redis region issue to infra (NOTIF-6 blocked)" },
       { item: "Confirm Marcus starts NOTIF-4 today (P1, no buffer)" },
@@ -679,23 +912,60 @@ export const TEST_DATA: OnbData = {
       { item: "Infra - ETA on the Redis region fix?" },
       { item: "Priya - is staging ready for NOTIF-2 sign-off?" },
     ],
+    leadershipUpdate: "Sprint 1 is tracking behind plan on one blocked story. The team is unblocking it today and a scope call may be needed by Friday to keep the committed delivery achievable.",
   },
   "decision-log": {
     project: "Finwave Real-Time Notifications",
+    preparedBy: "PM",
+    version: "1.3",
     entries: [
       {
+        date: "2026-06-15", title: "Webhook delivery pulled into Sprint 2",
         area: "Scope",
         originalPlan: "Webhook delivery in Phase 2 (post-MVP)",
         revisedPlan: "Webhook delivery moved into Sprint 2",
         reason: "Enterprise client request ahead of the Salesforce conference",
         changeProposedBy: "Sarah Chen",
-        deliveryImpact: "Sprint 2 capacity reduced, and NOTIF-6 deferred to Sprint 3",
+        deliveryImpact: "Sprint 2 capacity reduced, NOTIF-6 deferred to Sprint 3",
         technicalImpact: "New webhook service required in Sprint 2",
         productOwnerImpact: "Notification history de-prioritised to Sprint 3",
         costImpact: "Neutral - within $80k budget",
-        changeStatus: "Approved",
+        changeStatus: "Superseded",
         changeApprovedBy: "Sarah Chen",
       },
+      {
+        date: "2026-06-20", title: "Notification history deferred to Phase 2",
+        area: "Scope",
+        originalPlan: "Notification history in the launch scope",
+        revisedPlan: "Notification history deferred to Phase 2",
+        reason: "Protect the launch date after webhook scope was added",
+        changeProposedBy: "PM",
+        deliveryImpact: "Removes NOTIF-6 from the critical path",
+        technicalImpact: "None",
+        productOwnerImpact: "History drops off the launch roadmap",
+        costImpact: "Neutral",
+        changeStatus: "Under Review",
+        changeApprovedBy: "[TBC]",
+        followUps: "Needs a formal CR - outside the current SOW. The PRD is now stale.",
+      },
+      {
+        date: "2026-06-28", title: "Webhooks descoped to a post-launch fast-follow",
+        area: "Scope",
+        originalPlan: "Webhook delivery in Sprint 2 (per D-001)",
+        revisedPlan: "Webhooks moved to a fast-follow release after launch",
+        reason: "Sprint 2 could not absorb webhooks without slipping the launch (cutting QA was considered and rejected)",
+        changeProposedBy: "PM",
+        deliveryImpact: "Protects the launch date, webhooks land two weeks later",
+        technicalImpact: "Webhook service built behind a disabled flag",
+        productOwnerImpact: "Enterprise client notified of the fast-follow date",
+        costImpact: "Neutral",
+        changeStatus: "Approved",
+        changeApprovedBy: "Sarah Chen",
+        supersedes: "D-001",
+      },
+    ],
+    discussed: [
+      { item: "Adding SMS notifications - floated by Sarah, no decision taken" },
     ],
   },
   "meeting-notes": {
@@ -722,81 +992,150 @@ export const TEST_DATA: OnbData = {
       { who: "Marcus", what: "Confirm Kafka consumer for payment events", when: "2026-06-03" },
       { who: "PM", what: "Update charter and circulate for sign-off", when: "2026-06-02" },
       { who: "Priya", what: "Define QA approach for delivery testing", when: "2026-06-05" },
+      { who: "Unassigned", what: "Decide whether a notification history view is in MVP scope", when: "TBD" },
     ],
     openQuestions: [
-      { question: "Email delivery failure: retry or alert?" },
-      { question: "Is a notification history view required?" },
+      { question: "Email delivery failure: retry silently or alert the ops channel?" },
+      { question: "Is a notification history view required for MVP? (unassigned action above)" },
+      { question: "A speaker after the crosstalk was labelled \"Speaker 4\" (attribution unclear) - confirm who owns the SendGrid account." },
+    ],
+    followUps: [
+      { question: "What is the fallback if a payment event never reaches the Kafka consumer?" },
+      { question: "Who signs off that within 60 seconds is the right SLA for enterprise clients?" },
+      { question: "Does the in-app stretch need design input before Sprint 1 planning?" },
     ],
   },
   "tech-review": {
+    project: "Finwave Real-Time Notifications",
     documentType: "Architecture proposal",
-    summary: "Kafka event bus to a new notification microservice, emails via SendGrid, Redis to prevent duplicate sends, feature flag for per-client rollout.",
+    verdict: "Feasible with conditions",
+    summary: "A Kafka event bus feeds a new notification microservice that sends emails via SendGrid, with Redis preventing duplicate sends on event replay and a feature flag gating per-client rollout. It replaces the current manual notification process.",
     implications: [
-      { item: "6 weeks feasible for email only - Kafka already in place" },
-      { item: "Redis deduplication adds ~3 days not in the original estimate" },
-      { item: "SendGrid API key needed in prod before Week 3" },
+      { item: "Timeline: 6 weeks feasible for email only - Kafka already in place" },
+      { item: "Scope: Redis deduplication adds ~3 days not in the original estimate" },
+      { item: "Third-party: SendGrid production API key needed before Week 3" },
+      { item: "Operational: a new service to monitor and run on-call for" },
     ],
+    estimate: "The SA's 6 weeks covers build and unit test only. It excludes QA, UAT, environment setup, and production hardening. Basis is the SA's prior experience on a similar consumer, not a spike, so treat it as indicative.",
+    cost: "SendGrid is usage-based and the current tier is unproven at enterprise volume, and Redis adds a managed-instance cost. The document is silent on both, so they are raised as SA questions rather than estimated here.",
     risks: [
-      { risk: "Redis not in current prod stack", likelihood: "M", impact: "H" },
-      { risk: "SendGrid rate limits under peak volume", likelihood: "L", impact: "M" },
+      { risk: "Redis not in current prod stack", likelihood: "M", impact: "H", note: "Blocks delivery if provisioning slips past Week 3" },
+      { risk: "SendGrid rate limits under peak volume", likelihood: "L", impact: "M", note: "Needs a load test the document does not mention" },
+      { risk: "No rollback path for a bad notification batch", likelihood: "M", impact: "M", note: "Not addressed in the document (a checked omission)" },
     ],
-    dependencies: [{ dependency: "Redis provisioned in prod" }, { dependency: "SendGrid prod API key before Week 3" }],
+    topRisk: "R1 - confirm Redis is provisioned in production before the Week 3 build start, or the email path cannot ship.",
+    dependencies: [{ dependency: "Redis provisioned in prod before Week 3" }, { dependency: "SendGrid prod API key issued and the tier confirmed" }],
     questions: [
-      { question: "Is Redis already provisioned in prod?" },
-      { question: "Does the SendGrid tier support enterprise volume?" },
-      { question: "How does the feature flag interact with account settings?" },
+      { question: "Is Redis already provisioned in prod, and who owns it?" },
+      { question: "Does the SendGrid tier support enterprise peak volume?" },
+      { question: "Is there a rollback plan if a bad batch of notifications is sent?" },
+      { question: "Was data residency for notification payloads considered?" },
     ],
-    scopeImplications: "Redis deduplication adds ~3 days not in the original estimate. Flag this against the 6-week deadline.",
-    verdict: "Feasible with conditions - resolve Redis provisioning before Week 3.",
+    scopeImplications: "The Redis dedup and the rollback gap imply more work than the original estimate shows. Flag roughly 3 extra days at Sprint 1 planning and hold the in-app stretch until the email path is proven.",
   },
-  retrospective: {
-    sprint: "Sprint 1",
-    outcome: "Shipped the email engine to staging. One stretch item carried over.",
-    attendees: ["Marcus", "Aiko", "Priya", "Lin", "PM"],
-    wentWell: [{ item: "Kafka reuse saved a week" }, { item: "Daily QA pairing caught issues early" }],
+  "retrospective": {
+    sprint: "Sprint 1 - Notifications",
+    outcome: "Partially met goal",
+    sprintFacts: "Committed 18 points, delivered 15, one carryover (NOTIF-6), zero incidents",
+    attendees: ["BE", "QA", "PM"],
+    priorActions: [
+      { action: "Add a pre-merge build check", owner: "BE lead", done: "No" },
+      { action: "Book QA staging a sprint ahead", owner: "QA", done: "Yes" },
+    ],
+    wentWell: [
+      { item: "Kafka consumer landed early, which unblocked the email path" },
+      { item: "Daily async standup kept the remote team aligned without a long call" },
+    ],
     didnt: [
-      { item: "Redis region misconfig blocked NOTIF-6", impact: "Lost two days, stretch slipped" },
-      { item: "Email copy arrived late", impact: "Template build started a day late" },
+      { theme: "Build broke twice - no pre-merge check", whatHappened: "The build failed after merges with no gate, twice in the sprint", impact: "Roughly half a day lost re-running CI", recurring: "Yes" },
+      { theme: "Redis provisioned in the wrong region", whatHappened: "NOTIF-6 blocked mid-sprint on an infra misconfiguration", impact: "One story carried over", recurring: "No" },
+      { theme: "Client sign-off slipped", whatHappened: "The sponsor did not review the charter within the agreed window", impact: "Sprint 2 planning started without confirmed scope", recurring: "No" },
     ],
     actions: [
-      { action: "Add infra readiness check to sprint planning", owner: "PM", by: "Sprint 2 planning" },
-      { action: "Lock content deadlines in the SOW", owner: "Sarah", by: "Sprint 2 SOW" },
+      { action: "Add a required pre-merge build check in CI", owner: "BE lead", by: "Sprint 2 start", addresses: "1", escalation: "No" },
+      { action: "Add a Redis region check to the environment runbook", owner: "Infra", by: "2026-06-25", addresses: "2", escalation: "No" },
+      { action: "Agree a 48-hour sponsor review SLA", owner: "PM", by: "2026-06-24", addresses: "3", escalation: "Yes" },
     ],
-    sentiment: "Positive - team felt the MVP was achievable and momentum is good.",
+    parked: [
+      { item: "Test data setup is manual and slow, raised but not prioritised this sprint" },
+    ],
+    sentiment: "Morale is steady. The recurring build breakage is the main frustration to watch.",
   },
   "stakeholder-update": {
     audience: "Sarah Chen (Sponsor)",
     status: "At risk",
-    headline: "Notification engine on track for email MVP. One infra blocker being resolved.",
+    previousStatus: "On track",
+    headline: "The email MVP is still on track for the 3 July launch, but added webhook scope put Sprint 2 at risk. Recovery is to descope webhooks to a fast-follow. Ask: confirm the fast-follow date by Friday.",
     progress: [
-      { item: "Kafka consumer and dedup complete (NOTIF-2)" },
-      { item: "Email templates approved (NOTIF-5)" },
+      { item: "Promised the email engine to staging - delivered, all three event types sending" },
+      { item: "Promised recipient management - delivered behind a feature flag" },
     ],
-    comingNext: [{ item: "SendGrid integration to staging" }, { item: "Start webhook spike for Sprint 2" }],
-    risks: [{ risk: "NOTIF-6 blocked on Redis region", impact: "Stretch item at risk", action: "Infra ticket raised, chasing ETA" }],
-    asks: [{ ask: "Confirm webhook scope for Sprint 2", owner: "Sarah", by: "Friday" }],
-    keyDates: [{ milestone: "Email MVP to staging", date: "2026-06-20" }, { milestone: "Conference demo", date: "2026-07-13" }],
+    comingNext: [{ item: "Production launch of the email MVP on 3 July" }, { item: "Webhook delivery as a fast-follow the week of 14 July" }],
+    budget: "Spend is $54.5k of the $80k budget, on trajectory. No change requested this period.",
+    risks: [{ risk: "SendGrid tier unproven at peak volume", impact: "Possible throttling at enterprise volume", action: "Load test booked before launch" }],
+    asks: [{ ask: "Confirm the webhook fast-follow date", owner: "Sarah", by: "Friday" }],
+    keyDates: [
+      { milestone: "Email MVP launch", date: "2026-07-03", was: "" },
+      { milestone: "Webhook delivery", date: "2026-07-14", was: "2026-07-03" },
+    ],
+    nextUpdate: "2026-07-04",
   },
   roadmap: {
     goal: "Ship real-time notifications before the Salesforce conference",
-    horizon: "Next 8 weeks",
+    horizon: "Next 2 quarters",
+    confidence: "Near-term firm, later directional",
+    nextReview: "Post-Q2 close",
+    items: [
+      { bucket: "Now", initiative: "Email notification MVP", theme: "Retention", confidence: "High", size: "M", note: "Top priority - enterprise churn signal" },
+      { bucket: "Now", initiative: "Recipient management", theme: "Retention", confidence: "High", size: "S", note: "Depends on the account-settings API" },
+      { bucket: "Next", initiative: "Webhook delivery", theme: "Enterprise", confidence: "Medium", size: "M", note: "Depends on the email engine shipping" },
+      { bucket: "Later", initiative: "In-app notification centre", theme: "Engagement", confidence: "Low", size: "L", note: "Open question - is there demand?" },
+    ],
     weeks: "8",
     tasks: [
-      { name: "Discovery + charter", lane: "Sprint 0", startWeek: "1", endWeek: "1", startDate: "2026-06-01", endDate: "2026-06-05" },
-      { name: "Notification engine (email)", lane: "Sprint 1", startWeek: "2", endWeek: "3", startDate: "2026-06-09", endDate: "2026-06-20" },
-      { name: "Recipient management", lane: "Sprint 1", startWeek: "3", endWeek: "4", startDate: "2026-06-16", endDate: "2026-06-27" },
-      { name: "Webhook delivery", lane: "Sprint 2", startWeek: "5", endWeek: "6", startDate: "2026-06-30", endDate: "2026-07-11" },
-      { name: "Hardening + release", lane: "Sprint 2", startWeek: "7", endWeek: "8", startDate: "2026-07-14", endDate: "2026-07-25" },
+      { name: "Email notification MVP", lane: "Now", startWeek: "1", endWeek: "3", startDate: "2026-06-09", endDate: "2026-06-27" },
+      { name: "Recipient management", lane: "Now", startWeek: "3", endWeek: "4", startDate: "2026-06-16", endDate: "2026-06-27" },
+      { name: "Webhook delivery", lane: "Next", startWeek: "5", endWeek: "6", startDate: "2026-06-30", endDate: "2026-07-11" },
     ],
   },
   "budget-tracker": {
     project: "Finwave Notifications",
     budget: "80000",
+    approvedChanges: "5000",
+    approvedChangesRef: "D-002",
+    committed: "4000",
+    commercialModel: "time-and-materials",
+    scopeComplete: "60",
+    timeElapsed: "55",
+    plannedStart: "2026-06-01",
+    plannedEnd: "2026-07-25",
     developers: [
       { name: "Marcus (BE)", hours: "160", rate: "120" },
       { name: "Aiko (BE)", hours: "150", rate: "110" },
       { name: "Lin (FE)", hours: "80", rate: "100" },
       { name: "Priya (QA)", hours: "120", rate: "90" },
+    ],
+  },
+  onboarding: {
+    // Only the human-input fields are seeded. Everything else in the brief
+    // auto-fills from this project's other artefacts (see src/lib/onboarding.ts).
+    role: "Backend Engineer",
+    sensitivities: "Ask Sarah (account lead) before discussing the timeline history with the client.",
+    howWeWork: [
+      { item: "Ceremonies: daily async standup, 2-week sprints, review and retro on the last Friday" },
+      { item: "Comms: #finwave-notifications on Slack" },
+      { item: "Where the work lives: Jira NOTIF, Confluence FIN space, the finwave-notifications repo" },
+    ],
+    roleStart: [
+      { item: "Start on NOTIF-4 (recipient lookup service), pair with Marcus" },
+      { item: "Local env: the Kafka consumer and a Redis instance, see the repo README" },
+    ],
+    checklist: [
+      { item: "GitHub repo access", grantedBy: "Marcus" },
+      { item: "Jira NOTIF board access", grantedBy: "PM" },
+      { item: "Client VPN and staging access", grantedBy: "Finwave IT (lead time: 3-5 days, request day one)" },
+      { item: "Read the three docs above", grantedBy: "" },
+      { item: "Intro to Sarah, Marcus, and Priya", grantedBy: "" },
     ],
   },
 };

@@ -1,7 +1,7 @@
 ---
 name: retrospective
 description: Facilitates a sprint or project retrospective and turns raw retro input into a structured, action-oriented retro document. Use whenever someone says "run a retro", "sprint retrospective", "what went well / what didn't", "let's reflect on the sprint", or pastes raw retro notes that need structuring into themes and owned action items. Standalone - runs after a sprint or release, does not chain into build skills.
-version: 1.1.0
+version: 1.2.0
 argument-hint: <sprint name + retro notes, or "plan a retro">
 allowed-tools: Read
 ---
@@ -75,6 +75,8 @@ Adjust the agenda below to match - do not walk into a tense room with the standa
 
 # Mode 2 - Synthesise
 
+**Works from whatever retro input you paste.** Synthesise does not assume a live retro was facilitated. A survey export, a chat log, ticket comments, or a plain list of what went well and what did not are all valid input. Structure whatever is provided and never invent reflections the team did not give.
+
 Before writing the summary:
 
 - **Depersonalise.** Rewrite person-directed notes as process or system themes ("Dave broke the build twice" becomes "build broke twice - no pre-merge check"). Never attribute a comment to a named individual anywhere in the artefact. If a note is a people or conduct issue rather than a process one, exclude it and flag it to the PM as "handle 1:1, not in this document".
@@ -111,7 +113,7 @@ Before writing the summary:
 
 > Each action has one owner and a date. "Communicate better" is not an action - "Post the deploy plan in #releases by Wed standup" is.
 
-If the input doesn't give an owner or date for an action, do not fabricate one. Assign the most likely owner from context and mark it `[confirm at retro]`, or use `[Owner TBC]` / `[Date TBC]`, and flag that each must be set before the retro closes.
+If the input doesn't give an owner or date for an action, do not fabricate one. Assign the most likely owner from context and mark it `[confirm]`, or use `[Owner TBC]` / `[Date TBC]`, and flag that each must be assigned before the actions are finalised (at the retro if there is one, otherwise by the PM).
 
 If a theme is outside the team's control (client behaviour, staffing, budget), do not write it as a team-owned action with a date. Prefix the Action cell with **Escalation:**, default the owner to the PM, and point to `/stakeholder-update` or `/risk-scan` as the follow-on.
 

@@ -97,6 +97,28 @@ export const DEMO_PROJECTS: ProjectContext[] = [
   },
 ];
 
+/**
+ * Stub answers to the gate intake questions for the seeded demo projects, so the
+ * intake interview does not block "Run all" or per-step generate during testing.
+ * Real (user-created) projects start empty and prompt the interview as normal.
+ * Keys are the exact question ids from the generated intakeQuestions.ts
+ * (risk-scan gate Q13, prd gate Q10).
+ */
+export const DEMO_INTAKE_ANSWERS: Record<string, Partial<Record<SkillId, Record<string, string>>>> =
+  Object.fromEntries(
+    DEMO_PROJECTS.map((p) => [p.id, {
+      "risk-scan": {
+        Q1: "Phase 1 / MVP - in active development",
+        Q2: "Standard review - full risk register",
+        Q13: "A few I am watching - vendor API access is unconfirmed and staging has been flaky.",
+      },
+      prd: {
+        Q1: "PRD - engineering and product audience",
+        Q10: "Yes, write the PRD.",
+      },
+    }]),
+  );
+
 export const DEMO_CONNECTORS: McpConnector[] = [
   { id: "claude",       label: "Claude (Orchestrator)", status: "disconnected" },
   { id: "jira",         label: "Jira",       status: "disconnected" },

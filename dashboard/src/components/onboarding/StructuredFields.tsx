@@ -21,9 +21,20 @@ export function StructuredFields({
 }) {
   const set = (name: string, v: StepValues[string]) => onChange({ ...values, [name]: v });
 
+  // Auto fields are derived from the project's other artefacts and refresh on
+  // open, so editing them here would not persist. They are hidden from the form
+  // (and shown live in the brief on the right) so only fields that persist show.
+  const visible = step.fields.filter((f) => !f.auto);
+  const autoCount = step.fields.length - visible.length;
+
   return (
     <div className="space-y-4">
-      {step.fields.map((f) => {
+      {autoCount > 0 && (
+        <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          {autoCount} section{autoCount === 1 ? "" : "s"} auto-fill from this project's artefacts and refresh each time the brief opens. Fill only the fields below; they are the ones that persist.
+        </p>
+      )}
+      {visible.map((f) => {
         if (f.kind === "list") {
           const list = Array.isArray(values[f.name]) ? (values[f.name] as Row[]) : [];
           const addRow = () => {
@@ -33,7 +44,7 @@ export function StructuredFields({
           };
           return (
             <section key={f.name} className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-card">
-              <SectionTitle label={f.label} required={f.required} count={list.length} />
+              <SectionTitle label={f.label} required={f.required} human={f.human} count={list.length} />
               <div className="space-y-2">
                 {list.map((row, idx) => (
                   <RowEditor
@@ -65,7 +76,7 @@ export function StructuredFields({
         // scalar / tags
         return (
           <div key={f.name} className="space-y-1">
-            <Label>{f.label}{f.required && <span className="text-status-danger"> *</span>}</Label>
+            <Label>{f.label}{f.required && <span className="text-status-danger"> *</span>}{f.human && <HumanHint />}</Label>
             {f.kind === "tags" ? (
               <TagInput
                 value={Array.isArray(values[f.name]) ? (values[f.name] as string[]) : []}
@@ -83,14 +94,23 @@ export function StructuredFields({
 }
 
 /** Header for a grouped section (Agenda, Decisions, Action items, etc.). */
-function SectionTitle({ label, required, count }: { label: string; required?: boolean; count: number }) {
+function SectionTitle({ label, required, human, count }: { label: string; required?: boolean; human?: boolean; count: number }) {
   return (
     <div className="flex items-center justify-between">
       <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-        {label}{required && <span className="text-status-danger"> *</span>}
+        {label}{required && <span className="text-status-danger"> *</span>}{human && <HumanHint />}
       </p>
       {count > 0 && <span className="text-[10px] tabular-nums text-muted-foreground">{count}</span>}
     </div>
+  );
+}
+
+/** Marks a field the joiner-brief cannot auto-fill and a person must complete. */
+function HumanHint() {
+  return (
+    <span className="ml-2 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+      you fill this
+    </span>
   );
 }
 

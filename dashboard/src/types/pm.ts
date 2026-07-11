@@ -67,6 +67,7 @@ export interface ProjectContext {
 export interface SprintRef {
   number: number;
   goal: string;
+  name?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -100,7 +101,7 @@ export interface McpConnector {
 }
 
 /** Outbound destinations a finished artifact can be pushed to. */
-export type SaveDestination = ConnectorId | "local" | "clipboard";
+export type SaveDestination = ConnectorId | "local" | "clipboard" | "pdf";
 
 /* ========================================================================
  * 3. SKILLS  (the 18 lifecycle skills, grouped + the orchestrator)
@@ -307,6 +308,36 @@ export interface RiskDecision {
   impactIfDelayed: string;
 }
 
+/** Expanded narrative for a top risk (skill "Top Risks - Detail" section). */
+export interface RiskDetailEntry {
+  ref: string;
+  name: string;
+  rootCause: string;
+  whyExposed: string;
+  triggerSignal?: string;
+  /** Rough delivery-terms exposure, e.g. "~2-4 weeks". Omitted when not estimable. */
+  exposure?: string;
+  action: string;
+}
+
+/** A cheap test that converts an unknown into evidence (Validation Experiments). */
+export interface RiskExperiment {
+  ref: string;
+  experiment: string;
+  testing: string;
+  learning: string;
+  by: string;
+}
+
+/** Delta versus the prior scan (re-scans only). */
+export interface RiskChanges {
+  added?: string[];
+  escalated?: string[];
+  deEscalated?: string[];
+  closed?: string[];
+  nextReview?: string;
+}
+
 /** Pre-scaled coordinates (0-100) for the Recharts likelihood x impact matrix. */
 export interface RiskMatrixPoint {
   ref: string;
@@ -334,6 +365,14 @@ export interface RiskScanPayload {
   matrix: RiskMatrixPoint[];
   /** Key assumptions (Medium/High depth). */
   assumptions?: RiskAssumption[];
+  /** Expanded detail for the top (red, or top-2 amber) risks. */
+  topRisksDetail?: RiskDetailEntry[];
+  /** One action line per Mitigate risk not expanded in topRisksDetail. */
+  mitigationActions?: { ref: string; action: string }[];
+  /** Cheap tests to convert scary unknowns into evidence (Medium/High, optional). */
+  validationExperiments?: RiskExperiment[];
+  /** Delta versus the prior scan, present only on a re-scan. */
+  changesSinceLastScan?: RiskChanges;
   /** Decisions needed with owners and deadlines. */
   decisionsNeeded?: RiskDecision[];
   /** Why the top risks are ranked as they are (High/detailed depth only). */
@@ -353,13 +392,17 @@ export type ReleaseCategoryId =
   | "communications"
   | "dependencies"
   | "approvals"
-  | "post-release-readiness";
+  | "post-release-readiness"
+  | "hotfix";
 
 export interface ChecklistItem {
   ref: string; // F1, T2...
   label: string;
   status: ChecklistStatus;
   note?: string;
+  owner?: string;         // who can confirm the item or owns its resolution
+  /** Set when a FAIL is accepted in writing - the item is treated as a RISK. */
+  acceptedBy?: string;
 }
 
 export interface ReleaseCategory {
@@ -372,23 +415,56 @@ export interface ChecklistTally {
   PASS: number; FAIL: number; RISK: number; UNCONFIRMED: number; "N/A": number;
 }
 
+/** UNCONFIRMED items grouped by the person who can answer them. */
+export interface ChaseGroup {
+  owner: string;
+  questions: { ref: string; question: string; leadTime?: boolean }[];
+}
+
+/** One row of the re-assessment delta table. */
+export interface ReleaseDeltaRow {
+  ref: string;
+  item: string;
+  was: string; // FAIL / UNCONFIRMED
+  now: string; // PASS / still open
+  change: string;
+}
+
+/** The decision aid attached to a NO-GO or CONDITIONAL GO verdict. */
+export interface PathToGo {
+  resolvable: string[];
+  descopeOptions: string[];
+  reducedRelease: string;
+  verdictUnderReducedScope: string;
+}
+
 export interface ReleaseChecklistPayload {
   skill: "release-checklist";
   release: string;
   releaseType: "planned" | "hotfix" | "phased" | "feature-flag";
   targetDate?: string;
-  categories: ReleaseCategory[];      // exactly 7
+  categories: ReleaseCategory[];
   tally: ChecklistTally;
   blockers: { ref: string; label: string; owner: string; due?: string }[];
   conditions?: { ref: string; label: string; owner: string; due?: string }[];
+  /** UNCONFIRMED items grouped by owner - the day-before-the-meeting chase list. */
+  chaseList?: ChaseGroup[];
+  /** Re-assessment runs only: what moved since the prior checklist. */
+  delta?: ReleaseDeltaRow[];
+  verdictMovement?: string;
+  /** Present on NO-GO and CONDITIONAL GO verdicts, omitted on a clean GO. */
+  pathToGo?: PathToGo;
   verdict: ReleaseVerdict;
   verdictRationale: string;
 }
 
-/* ---- /decision-log : the 11 mandatory columns ---- */
-export type ChangeStatus = "Proposed" | "Under Review" | "Approved" | "Rejected";
+/* ---- /decision-log : a running register (index + detail per decision) ---- */
+export type ChangeStatus = "Proposed" | "Under Review" | "Approved" | "Rejected" | "Superseded";
 
 export interface DecisionLogEntry {
+  id?: string;              // D-001, D-002 ... assigned in register sequence
+  date?: string;            // date decided ("[TBC]" when the input does not say)
+  title?: string;           // short decision title for the detail-block heading
   area: "Scope" | "Timeline" | "Budget" | "Architecture" | "Team" | "Process" | "Other";
   originalPlan: string;
   revisedPlan: string;
@@ -400,13 +476,21 @@ export interface DecisionLogEntry {
   costImpact: string;
   changeStatus: ChangeStatus;
   changeApprovedBy: string; // "[TBC]" when unconfirmed
+  supersedes?: string;      // D-00X this decision reverses
+  followUps?: string;       // one line, only when something genuinely arises
 }
 
 export interface DecisionLogPayload {
   skill: "decision-log";
   project: string;
   preparedBy?: string;
+  version?: string;
+  lastUpdated?: string;
   entries: DecisionLogEntry[];
+  /** Floated ideas that were not decided - never logged as decisions. */
+  discussedNotDecided?: string[];
+  /** Closing nudge when any entry still needs sign-off. */
+  signOffNudge?: string;
 }
 
 /* ---- /sprint-planning : 70-80% capacity + overcommit flag ---- */
@@ -420,14 +504,54 @@ export interface CapacityRow {
   notes?: string;
 }
 
+/** A numeric estimate, or "TBD" for an unestimated item excluded from the load. */
+export type BacklogEstimate = number | "TBD";
+
 export interface BacklogItem {
   priority: BacklogPriority;
   item: string;
-  estimate: number;
+  estimate: BacklogEstimate;
   owner: string;
   dependencies?: string;
   /** P2 items are stretch and must never be committed at full confidence. */
   isStretch: boolean;
+  /** false = this committed item does not serve the sprint goal, so it is flagged. */
+  servesGoal?: boolean;
+}
+
+/** Carryover re-committed from a prior sprint, counted at remaining effort. */
+export interface SprintCarryover {
+  item: string;
+  originalSprint: string;
+  originalEstimate: number | string;
+  remainingEffort: number | string;
+  reason: string;
+  reCommitted: boolean;
+}
+
+export interface SprintDependency {
+  item: string;
+  dependsOn: string;
+  owner: string; // team or person that owns the dependency
+  status: "Confirmed" | "Unconfirmed";
+  riskIfBlocked: string;
+}
+
+export interface SprintRisk {
+  risk: string;
+  impact: string;
+  mitigation: string;
+}
+
+export interface SprintKeyDate {
+  date: string;
+  event: string;
+}
+
+/** Historical velocity anchor: points averaged over the last N sprints. */
+export interface SprintVelocity {
+  averagePoints: number;
+  sprints: number;
 }
 
 export interface SprintPlanPayload {
@@ -437,7 +561,7 @@ export interface SprintPlanPayload {
   /** Sum of usable capacity across the team. */
   usableCapacity: number;
   backlog: BacklogItem[];
-  /** Committed load = P0 + P1 (stretch excluded). */
+  /** Committed load = P0 + P1 (stretch excluded, TBD items excluded). */
   plannedLoad: number;
   /** plannedLoad / usableCapacity, 0-1. */
   loadRatio: number;
@@ -445,27 +569,55 @@ export interface SprintPlanPayload {
   capacityThreshold: { min: 0.7; max: 0.8 };
   /** True when loadRatio exceeds capacityThreshold.max. Drives the UI warning. */
   overcommitted: boolean;
+  /** Historical velocity anchor. Absent = no baseline, so load % is indicative. */
+  velocity?: SprintVelocity;
+  carryover?: SprintCarryover[];
+  dependencies?: SprintDependency[];
+  risks?: SprintRisk[];
+  /** proposed = true renders the "confirm with team" title when the team has no DoD of its own. */
+  definitionOfDone?: { proposed: boolean; items: string[] };
+  keyDates?: SprintKeyDate[];
 }
 
 /* ---- /sprint-report : velocity + burndown (charts) ---- */
+export type GoalStatus = "on-track" | "at-risk" | "missed" | "not-stated";
+export type VelocityAssessment = "on-trend" | "over-committed" | "under-committed";
+export type RiskLevel = "Low" | "Medium" | "High";
+
 export interface SprintReportPayload {
   skill: "sprint-report";
   sprint: string;
   day: number;
   totalDays: number;
+  /** true = the sprint is closed, so the report is a close-out (actuals + carry-over). */
+  closed?: boolean;
   status: RagStatus;
-  confidence: number; // 0-100
-  forecast: string;
+  /** undefined = not assessable (days remaining unknown) - never fabricate a %. */
+  confidence?: number; // 0-100
+  riskLevel?: RiskLevel;
+  forecast: string; // in close-out mode this reads as actuals
   committed: number;
   completed: number;
+  /** Sprint goal and its attainment. goalStatus "not-stated" when no goal was given. */
+  goal?: string;
+  goalStatus?: GoalStatus;
+  /** Trailing velocity average and the committed-vs-average verdict, when history exists. */
+  trailingAverage?: number;
+  velocityAssessment?: VelocityAssessment;
   velocityTrend: { sprint: string; points: number }[];
   burndown: { day: number; remaining: number; ideal: number }[];
   topRisks: string[];
   /** Narrative sections (PM brief). */
   summary?: string;
+  /** Movement since the prior report on this sprint (re-run delta). */
+  movement?: string;
   priorities?: string[];
   actionsToday?: string[];
   standupQuestions?: string[];
+  /** Close-out mode only: items carried over and what they mean for the next sprint. */
+  carryover?: string[];
+  nextSprintImplications?: string;
+  leadershipUpdate?: string;
 }
 
 /* ---- /budget-tracker : per-developer cost mapped against budget ---- */
@@ -475,18 +627,44 @@ export interface BudgetDeveloper {
   rate: number;   // cost per hour
   cost: number;   // hours * rate
 }
+export type CommercialModel = "fixed-price" | "time-and-materials" | "retainer";
+
 export interface BudgetTrackerPayload {
   skill: "budget-tracker";
   project: string;
   verdict: RagStatus;
-  approved: number;
+  /** Which RAG threshold fired, so the verdict is reproducible. */
+  verdictRule?: string;
+  commercialModel?: CommercialModel;
+  /** Baseline split: original budget plus approved changes = the current baseline (`approved`). */
+  originalBudget?: number;
+  approvedChanges?: number;
+  approvedChangesRef?: string;   // decision-log reference for the change order
+  approved: number;              // current baseline
   spent: number;
+  spentCaveat?: string;          // e.g. invoice-lag note
   committed: number;
   remaining: number;
   forecastAtCompletion: number;
+  /** Which forecast drives the verdict, plus the two methods when they diverge. */
+  forecastMethod?: "run-rate" | "scope-based";
+  runRateForecast?: number;
+  scopeForecast?: number;
+  forecastAssumptions?: string;
+  knownOneOffs?: { item: string; amount: number }[];
   variance: number;
   timeElapsedPct: number;
   scopeCompletePct: number;
+  plannedStart?: string;
+  plannedEnd?: string;
+  /** Burn rate and the exhaustion-date check. */
+  avgBurnPerPeriod?: number;
+  burnPeriodLabel?: string;      // "sprint" / "week"
+  exhaustionDate?: string;
+  /** Movement since the prior budget report. */
+  movement?: string;
+  varianceDrivers?: { driver: string; effect: string; note?: string }[];
+  actions?: { action: string; owner: string; by?: string }[];
   /** Per-developer cost breakdown (name, hours, rate). */
   developers?: BudgetDeveloper[];
   burn?: { period: string; cumulative: number; budgetLine: number }[];
@@ -501,13 +679,46 @@ export interface RoadmapTask {
   startDate?: string;
   endDate?: string;
 }
+export type RoadmapConfidence = "High" | "Medium" | "Low";
+export type RoadmapSize = "S" | "M" | "L";
+
+export interface RoadmapItem {
+  initiative: string;
+  theme?: string;
+  note?: string;                 // why now / depends on / open question
+  confidence: RoadmapConfidence;
+  size?: RoadmapSize;            // present only when the input carries an effort signal
+}
+export interface RoadmapBucket {
+  name: string;                  // "Now" / "Next" / "Later" or "Q1" ...
+  span?: string;                 // rough time meaning, e.g. "roughly this quarter"
+  items: RoadmapItem[];
+}
+export interface RoadmapCommitment {
+  commitment: string;
+  date: string;                  // a fixed date stated in the input, never inferred
+  sitsIn: string;                // which bucket it lands in
+}
+
 export interface RoadmapPayload {
   skill: "roadmap";
   goal: string;
   horizon: string;
-  /** Total number of week columns on the timeline. */
+  confidence?: string;           // "Near-term firm, later directional"
+  nextReview?: string;
+  /** The Now/Next/Later (or quarterly) buckets - the roadmap's core content. */
+  buckets?: RoadmapBucket[];
+  hardCommitments?: RoadmapCommitment[];
+  /** Update mode: what moved since the prior roadmap. */
+  changesSince?: { date: string; changes: string[] };
+  /** One-line flag when the Now bucket obviously exceeds known capacity. */
+  capacityFlag?: string;
+  dependencies?: string[];
+  notNow?: string[];
+  assumptions?: string[];
+  /** Optional timeline visual. Total number of week columns. */
   weeks: number;
-  /** Lane labels in order (e.g. sprints). */
+  /** Lane labels in order. */
   lanes: string[];
   tasks: RoadmapTask[];
 }
@@ -522,8 +733,13 @@ export interface StoryItem {
   soThat?: string;
   /** Testable acceptance criteria, one statement per entry. */
   acceptanceCriteria?: string[];
-  points?: number;
+  /** Indicative PM size pending team estimation. "TBD" is a legitimate value. */
+  points?: number | string;
   status?: string;
+  /** MoSCoW priority: Must / Should / Could. */
+  priority?: string;
+  /** Traceability back to the source requirement, e.g. "FR-04" or "None". */
+  linkedRequirement?: string;
 }
 export interface EpicItem {
   key?: string;
@@ -534,12 +750,14 @@ export interface EpicItem {
 export interface StoriesPayload {
   skill: "stories";
   epics: EpicItem[];
+  /** One-line requirement-coverage statement, flagging any orphaned requirements. */
+  coverageNote?: string;
 }
 
 /* ---- Document skills : structured sections rendered as cards (DocumentView) ---- */
 export type DocSkill =
   | "triage" | "charter" | "discovery" | "prd" | "sprint-sow"
-  | "meeting-notes" | "tech-review" | "retrospective" | "stakeholder-update";
+  | "meeting-notes" | "tech-review" | "retrospective" | "stakeholder-update" | "onboarding";
 
 /** A rendered section of a document artifact. */
 export interface DocSection {
@@ -626,7 +844,7 @@ export function isStories(p?: ArtifactPayload): p is StoriesPayload {
 }
 const DOC_SKILLS = new Set<string>([
   "triage", "charter", "discovery", "prd", "sprint-sow",
-  "meeting-notes", "tech-review", "retrospective", "stakeholder-update",
+  "meeting-notes", "tech-review", "retrospective", "stakeholder-update", "onboarding",
 ]);
 export function isDoc(p?: ArtifactPayload): p is DocPayload {
   return !!p && DOC_SKILLS.has(p.skill);
