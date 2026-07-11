@@ -1,7 +1,6 @@
 import type { OrchestratorApi } from "@/api/orchestrator";
 import type { PlanStep, SkillExecution } from "@/types/pm";
 import { skillTitle } from "@/data/demo";
-import { SAMPLE_ARTIFACTS } from "@/data/sampleArtifacts";
 
 /**
  * In-memory OrchestratorApi for local development - no backend required.
@@ -42,6 +41,8 @@ export const mockApi: OrchestratorApi = {
   },
 
   async streamStep(_planId, step, onChunk, signal) {
+    // Loaded on demand so the ~46 kB sample corpus stays out of the entry chunk.
+    const { SAMPLE_ARTIFACTS } = await import("@/data/sampleArtifacts");
     const sample = SAMPLE_ARTIFACTS[step.skill];
     const markdown = sample?.markdown ?? `## ${skillTitle(step.skill)}\n\nGenerated output for ${skillTitle(step.skill)}.`;
     let acc = "";

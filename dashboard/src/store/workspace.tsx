@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type {
   ClientContext, ConnectionStatus, ConnectorId, McpConnector, ProjectContext, RiskDepth, SkillExecution, SkillId,
 } from "@/types/pm";
@@ -32,12 +32,9 @@ function mergePersistedConnectors(defaults: McpConnector[]): McpConnector[] {
   });
 }
 import { DEMO_CLIENTS, DEMO_PROJECTS, DEMO_CONNECTORS, DEMO_INTAKE_ANSWERS } from "@/data/demo";
-import { SAMPLE_ARTIFACTS } from "@/data/sampleArtifacts";
 import { STEPS, TEST_DATA, RECORD_NOUN, type StepValues } from "@/components/onboarding/steps";
 import { RECORD_SEEDS } from "@/components/onboarding/recordSeeds";
 import { buildExecution } from "@/components/onboarding/buildArtifact";
-import { ACME_DATA } from "@/data/acmeData";
-import { PORTAL_DATA } from "@/data/portalData";
 import { downstreamOf, dependenciesOf } from "@/data/skillChain";
 import { buildChainContext, intakeAnswersContext } from "@/api/artifactDigest";
 import { liveClaudeAvailable, regenerateSkillLive } from "@/api/claudeOrchestrator";
@@ -75,12 +72,40 @@ type SkillStatusMap = Record<string, Partial<Record<SkillId, SkillDecision>>>;
 function artifactFor(
   skill: SkillId, clientId: string | undefined, projectId: string | undefined, values: ArtifactValues,
 ): SkillExecution | null {
+  // STEPS covers every SkillId, so every artifact builds from its form schema.
   const step = STEPS.find((s) => s.id === skill);
   if (step) {
-    const v = values[projectId ?? ""]?.[skill] ?? TEST_DATA[skill] ?? {};
-    return buildExecution(step, v, clientId ?? "", projectId ?? "");
+    return buildExecution(step, seedFor(values, projectId ?? "", skill), clientId ?? "", projectId ?? "");
   }
-  return SAMPLE_ARTIFACTS[skill] ?? null;
+  return null;
+}
+
+/** Demo projects whose seed data loads on demand (kept out of the entry chunk). */
+const DEMO_SEEDED_PROJECTS = new Set(["p-portal", "p-rebuild"]);
+
+/**
+ * Seed values for a skill: saved values first, else the stub. A demo-seeded
+ * project never falls back to TEST_DATA (the Finwave stub) - before its seed
+ * chunk merges (or if the chunk fails to load) it stays empty rather than
+ * rendering another client's data. Exported for tests.
+ */
+export function seedFor(values: ArtifactValues, projectId: string, skill: SkillId): StepValues {
+  return (values[projectId]?.[skill]
+    ?? (DEMO_SEEDED_PROJECTS.has(projectId) ? {} : TEST_DATA[skill])
+    ?? {}) as StepValues;
+}
+
+/** Merge the lazily-loaded demo seeds in; anything already saved wins. Exported for tests. */
+export function withDemoSeeds(
+  m: ArtifactValues,
+  portal: Partial<Record<SkillId, StepValues>>,
+  acme: Partial<Record<SkillId, StepValues>>,
+): ArtifactValues {
+  return {
+    ...m,
+    "p-portal": { ...portal, ...(m["p-portal"] ?? {}) },
+    "p-rebuild": { ...acme, ...(m["p-rebuild"] ?? {}) },
+  };
 }
 
 interface WorkspaceValue {
@@ -117,6 +142,10 @@ interface WorkspaceValue {
   setOrchestrationInput: (projectId: string, input: string) => void;
   /** Regenerate one skill after an upstream change and clear its stale flag. */
   regenerate: (projectId: string, skill: SkillId) => Promise<void>;
+  /** Abort the in-flight live regeneration, if any. */
+  cancelRegenerate: () => void;
+  /** Skill currently regenerating (store-level so Cancel shows on the right artifact). */
+  regeneratingSkill: SkillId | null;
   /** Per-project: skills that have actually been generated (drives nav greying). */
   generatedSkills: Record<string, SkillId[]>;
   /** Per-project: generated/changed skills this user has not viewed yet (green dot). */
@@ -194,9 +223,28 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // All demo projects ship pre-orchestrated with stub data so they open populated.
   const [artifactValues, setArtifactValues] = useState<ArtifactValues>({
     "p-notifications": { ...(TEST_DATA as Partial<Record<SkillId, StepValues>>) },
-    "p-portal": { ...(PORTAL_DATA as Partial<Record<SkillId, StepValues>>) },
-    "p-rebuild": { ...(ACME_DATA as Partial<Record<SkillId, StepValues>>) },
+    // p-portal and p-rebuild are seeded asynchronously below - their ~67 kB demo
+    // corpus is code-split out of the entry chunk and fetched right after boot.
   });
+  const [demoSeedsReady, setDemoSeedsReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([import("@/data/portalData"), import("@/data/acmeData")])
+      .then(([p, a]) => {
+        if (cancelled) return;
+        setArtifactValues((m) => withDemoSeeds(
+          m,
+          p.PORTAL_DATA as Partial<Record<SkillId, StepValues>>,
+          a.ACME_DATA as Partial<Record<SkillId, StepValues>>,
+        ));
+        setDemoSeedsReady(true);
+      })
+      // Fail CLOSED: if a seed chunk cannot load (redeploy invalidated the hash,
+      // network drop), demoSeedsReady stays false and the demo projects show the
+      // empty state - never another client's TEST_DATA.
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
   // Customer Portal + Acme ship pre-orchestrated (stub data visible). Real-time
   // Notifications is left un-orchestrated so it demos the Run Orchestrator flow
   // with a pre-filled prompt.
@@ -272,6 +320,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // project's other artefacts (human-only fields stay blank) and refreshes on
   // open. Every other skill uses the plain per-skill values.
   const buildFor = useCallback((skill: SkillId, projectId?: string): SkillExecution | null => {
+    // A demo project's seed chunk may still be in flight for a beat after boot;
+    // show the empty state rather than building from the wrong (TEST_DATA) seed.
+    if (!demoSeedsReady && projectId && DEMO_SEEDED_PROJECTS.has(projectId)) return null;
     if (skill === "onboarding") {
       const step = STEPS.find((s) => s.id === "onboarding");
       if (!step) return null;
@@ -283,7 +334,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return buildExecution(step, merged, activeClientId ?? "", pid);
     }
     return artifactFor(skill, activeClientId, projectId, artifactValues);
-  }, [clients, projects, activeClientId, artifactValues]);
+  }, [demoSeedsReady, clients, projects, activeClientId, artifactValues]);
+
+  // If the user reached a demo artifact before its seed chunk arrived, fill the
+  // canvas in as soon as it lands (the guard above returned null meanwhile).
+  useEffect(() => {
+    if (!demoSeedsReady || !activeSkill || !activeProjectId || !DEMO_SEEDED_PROJECTS.has(activeProjectId)) return;
+    setCurrent((cur) => cur ?? buildFor(activeSkill, activeProjectId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoSeedsReady]);
 
   const selectSkill = useCallback((id: SkillId) => {
     setActiveSkill(id);
@@ -546,7 +605,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
    * original brief) re-derives it from the current upstream artefacts; otherwise
    * it re-seeds from stub. Either way the stale flag for this skill is cleared.
    */
+  // Abort handle for the in-flight live regeneration, so the user can cancel a
+  // hung call instead of waiting out the full timeout-and-retry cycle. The skill
+  // being regenerated lives in the store (not viewer-local state) so the Cancel
+  // affordance appears only on the artifact actually being regenerated.
+  const regenAbort = useRef<AbortController | null>(null);
+  const cancelRegenerate = useCallback(() => regenAbort.current?.abort(), []);
+  const [regeneratingSkill, setRegeneratingSkill] = useState<SkillId | null>(null);
+
   const regenerate = useCallback(async (projectId: string, skill: SkillId) => {
+    setRegeneratingSkill(skill);
+    try {
     const input = orchestrationInput[projectId] ?? "";
     if (liveClaudeAvailable() && input) {
       const generated: Partial<Record<SkillId, SkillExecution>> = {};
@@ -559,19 +628,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         intakeAnswersContext(skill, intakeAnswers[projectId]?.[skill]),
         buildChainContext(skill, generated),
       ].filter(Boolean).join("\n\n---\n\n");
+      regenAbort.current?.abort(); // only one live regeneration at a time
+      const ctrl = new AbortController();
+      regenAbort.current = ctrl;
       try {
-        const exec = await regenerateSkillLive(skill, input, context);
+        const exec = await regenerateSkillLive(skill, input, context, ctrl.signal);
         setClaudeExecMap((m) => ({ ...m, [`${projectId}::${skill}`]: exec }));
         setActiveSkill(skill);
         setCurrent(exec);
       } catch (e) {
-        // Do NOT mark the skill generated/seen on failure, and do NOT clear the
-        // stale flag. Rethrow so the caller can surface it (a swallowed failure
-        // made the primary Generate button silently do nothing).
+        // Do NOT mark the skill generated/seen on failure or cancel, and do NOT
+        // clear the stale flag. Rethrow so the caller can surface it (a swallowed
+        // failure made the primary Generate button silently do nothing).
         throw e instanceof Error ? e : new Error(String(e));
+      } finally {
+        if (regenAbort.current === ctrl) regenAbort.current = null;
       }
     } else {
-      const seed = (artifactValues[projectId]?.[skill] ?? TEST_DATA[skill] ?? {}) as StepValues;
+      const seed = seedFor(artifactValues, projectId, skill);
       const step = STEPS.find((x) => x.id === skill);
       if (step) { setActiveSkill(skill); setCurrent(buildExecution(step, seed, activeClientId ?? "", projectId)); }
     }
@@ -581,6 +655,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setOrchestratedProjects((p) => (p.includes(projectId) ? p : [...p, projectId]));
     setStaleSkills((m) => ({ ...m, [projectId]: (m[projectId] ?? []).filter((s) => s !== skill) }));
     markSeen(projectId, skill);
+    } finally {
+      setRegeneratingSkill(null);
+    }
   }, [activeClientId, orchestrationInput, claudeExecMap, artifactValues, intakeAnswers, markSeen]);
 
   const value = useMemo<WorkspaceValue>(
@@ -591,7 +668,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       addClient, addProject, deleteProject, deleteClient, setConnectorStatus, setConnectorApi,
       beginEdit, endEdit, saveArtifactValues, completeOrchestration, previewSkill, generateSkill,
       ensureRecords, addRecord, updateRecordMeta, saveRecord, openRecord,
-      staleSkills, setOrchestrationInput, regenerate,
+      staleSkills, setOrchestrationInput, regenerate, cancelRegenerate, regeneratingSkill,
       generatedSkills, unseenSkills, finalizeStepwise, markStale, intakeAnswers, setIntakeAnswers,
     }),
     [clients, projects, connectors, activeClientId, activeProjectId, activeSkill, current,
@@ -600,7 +677,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       addClient, addProject, deleteProject, deleteClient, setConnectorStatus, setConnectorApi,
       beginEdit, endEdit, saveArtifactValues, completeOrchestration, previewSkill, generateSkill,
       ensureRecords, addRecord, updateRecordMeta, saveRecord, openRecord,
-      staleSkills, setOrchestrationInput, regenerate,
+      staleSkills, setOrchestrationInput, regenerate, cancelRegenerate, regeneratingSkill,
       generatedSkills, unseenSkills, finalizeStepwise, markStale, intakeAnswers, setIntakeAnswers],
   );
 

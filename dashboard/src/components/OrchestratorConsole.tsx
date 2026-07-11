@@ -495,7 +495,12 @@ export function OrchestratorConsole({
     setCompleting(true);
     setCompletingStep(skillTitle(skill));
     try { await onGenerateStep?.(skill); }
-    catch (e) { setCompletionError(e instanceof Error ? e.message : String(e)); }
+    catch (e) {
+      // An abort is a cancellation (this run superseded or cancelled), not a
+      // failure - the raw DOMException message would read as a cryptic error.
+      if (e instanceof DOMException && e.name === "AbortError") setCompletionError("Generation cancelled.");
+      else setCompletionError(e instanceof Error ? e.message : String(e));
+    }
     setCompleting(false);
     setCompletingStep(null);
     snapshotIntake(skill);

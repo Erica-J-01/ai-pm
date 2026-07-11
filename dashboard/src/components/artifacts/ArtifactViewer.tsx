@@ -54,7 +54,9 @@ export function ArtifactViewer({
   const { notify } = useToast();
   const ws = useWorkspace();
   const [confluenceOpen, setConfluenceOpen] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
+  // True only while a cancel this user clicked is in flight (distinguishes a
+  // deliberate cancel from an abort caused by a superseding regeneration).
+  const cancelClicked = useRef(false);
 
   // Serialize the publish markdown once per execution instead of on every render
   // (it was re-run inline in JSX, including with the publish dialog closed).
@@ -86,19 +88,30 @@ export function ArtifactViewer({
   const skipped = skillStatus?.[skill as SkillId] === "skipped";
   const empty = !execution.payload && !execution.markdown.trim();
   const isStale = !!(ws.activeProjectId && ws.staleSkills[ws.activeProjectId]?.includes(skill as SkillId));
+  // Regeneration state lives in the store, keyed by skill, so the Cancel button
+  // appears only on the artifact actually being regenerated (this component does
+  // not remount on skill switch).
+  const regenerating = ws.regeneratingSkill === (skill as SkillId);
 
   const doRegenerate = async () => {
     if (!ws.activeProjectId) return;
-    setRegenerating(true);
+    cancelClicked.current = false;
     try {
       await ws.regenerate(ws.activeProjectId, skill as SkillId);
     } catch (e) {
-      reportError(e, { source: "artifact.regenerate", skill });
-      notify({ title: `Regenerate failed - ${e instanceof Error ? e.message : "please try again"}`, tone: "danger" });
+      if (e instanceof DOMException && e.name === "AbortError") {
+        // Only toast when THIS user clicked Cancel; an abort caused by a newer
+        // regeneration superseding this one stays silent.
+        if (cancelClicked.current) notify({ title: "Regeneration cancelled", tone: "info" });
+      } else {
+        reportError(e, { source: "artifact.regenerate", skill });
+        notify({ title: `Regenerate failed - ${e instanceof Error ? e.message : "please try again"}`, tone: "danger" });
+      }
     } finally {
-      setRegenerating(false);
+      cancelClicked.current = false;
     }
   };
+  const onCancelRegenerate = () => { cancelClicked.current = true; ws.cancelRegenerate(); };
 
   const confluenceConnector = connectors.find((c) => c.id === "confluence");
 
@@ -180,9 +193,14 @@ export function ArtifactViewer({
           <p className="text-xs text-status-warning">
             An upstream artefact changed - this may be out of date. Regenerate to derive it from the latest inputs.
           </p>
-          <Button size="sm" variant="outline" className="shrink-0" onClick={doRegenerate} disabled={regenerating}>
-            {regenerating ? "Regenerating…" : "Regenerate"}
-          </Button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Button size="sm" variant="outline" onClick={doRegenerate} disabled={regenerating}>
+              {regenerating ? "Regenerating…" : "Regenerate"}
+            </Button>
+            {regenerating && (
+              <Button size="sm" variant="ghost" onClick={onCancelRegenerate}>Cancel</Button>
+            )}
+          </div>
         </div>
       )}
 
@@ -192,9 +210,14 @@ export function ArtifactViewer({
             This artefact hit the length limit and may be cut off. Regenerate for the full document, or shorten the input.
           </p>
           {editable && (
-            <Button size="sm" variant="outline" className="shrink-0" onClick={doRegenerate} disabled={regenerating}>
-              {regenerating ? "Regenerating…" : "Regenerate"}
-            </Button>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Button size="sm" variant="outline" onClick={doRegenerate} disabled={regenerating}>
+                {regenerating ? "Regenerating…" : "Regenerate"}
+              </Button>
+              {regenerating && (
+                <Button size="sm" variant="ghost" onClick={onCancelRegenerate}>Cancel</Button>
+              )}
+            </div>
           )}
         </div>
       )}

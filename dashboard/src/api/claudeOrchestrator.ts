@@ -156,6 +156,10 @@ async function callClaude(
       content: { type: string; text: string }[];
       stop_reason: string | null;
     };
+    // A cancel can land while the body is being read (the abort listener is
+    // already detached by then) - honour it rather than returning a result the
+    // user just cancelled.
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     return {
       text: data.content.find((c) => c.type === "text")?.text ?? "",
       truncated: data.stop_reason === "max_tokens",
