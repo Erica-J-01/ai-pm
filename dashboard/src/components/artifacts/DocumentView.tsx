@@ -25,6 +25,7 @@ function Section({ section: s }: { section: DocSection }) {
   if (s.kind === "fields") {
     return (
       <div className="rounded-xl border border-border bg-card p-3.5 shadow-card">
+        {s.heading && <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{s.heading}</p>}
         <dl className="grid gap-x-5 gap-y-2.5 sm:grid-cols-2">
           {s.pairs?.map((p, i) => (
             <div key={i} className="min-w-0">

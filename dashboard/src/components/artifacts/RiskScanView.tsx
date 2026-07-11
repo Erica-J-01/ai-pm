@@ -168,6 +168,24 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
         </div>
       )}
 
+      {/* ── Changes Since Last Scan (re-scans only) ─────────────────── */}
+      {payload.changesSinceLastScan && (
+        <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Changes Since Last Scan</p>
+            {payload.changesSinceLastScan.nextReview && (
+              <span className="text-xs text-muted-foreground">Next review: {payload.changesSinceLastScan.nextReview}</span>
+            )}
+          </div>
+          <ul className="space-y-1 text-sm">
+            {(payload.changesSinceLastScan.added ?? []).map((c, i) => <li key={`n${i}`}><span className="font-medium text-status-danger">New</span> - {c}</li>)}
+            {(payload.changesSinceLastScan.escalated ?? []).map((c, i) => <li key={`e${i}`}><span className="font-medium text-status-warning">Escalated</span> - {c}</li>)}
+            {(payload.changesSinceLastScan.deEscalated ?? []).map((c, i) => <li key={`d${i}`}><span className="font-medium text-status-info">De-escalated</span> - {c}</li>)}
+            {(payload.changesSinceLastScan.closed ?? []).map((c, i) => <li key={`c${i}`}><span className="font-medium text-status-success">Closed</span> - {c}</li>)}
+          </ul>
+        </div>
+      )}
+
       {/* ── Top Risk Snapshot (all depths) ─────────────────────────── */}
       {topRisks.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-3 shadow-card">
@@ -398,6 +416,37 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
         </table>
       </div>
 
+      {/* ── Top Risks - Detail ─────────────────────────────────────── */}
+      {payload.topRisksDetail && payload.topRisksDetail.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Top Risks - Detail</p>
+          {payload.topRisksDetail.map((d) => (
+            <div key={d.ref} className="rounded-xl border border-border bg-card p-3.5 shadow-card">
+              <p className="text-sm font-medium"><span className="font-mono text-xs text-muted-foreground">{d.ref}</span> {d.name}</p>
+              <dl className="mt-2 space-y-1.5">
+                <Detail label="Root cause" value={d.rootCause} />
+                <Detail label="Why exposed" value={d.whyExposed} />
+                {d.triggerSignal && <Detail label="Trigger signal" value={d.triggerSignal} />}
+                {d.exposure && <Detail label="Exposure" value={d.exposure} />}
+                <Detail label="Action" value={d.action} />
+              </dl>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Mitigation Next Actions ────────────────────────────────── */}
+      {payload.mitigationActions && payload.mitigationActions.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mitigation Next Actions</p>
+          <ul className="space-y-1 text-sm">
+            {payload.mitigationActions.map((m, i) => (
+              <li key={i}><span className="font-mono text-xs text-muted-foreground">{m.ref}</span> {m.action}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ── Key Assumptions (mid-level + detailed) ─────────────────── */}
       {showAssumptions && payload.assumptions && payload.assumptions.length > 0 && (
         <div className="rounded-xl border border-border bg-card shadow-card overflow-x-auto">
@@ -420,6 +469,37 @@ export function RiskScanView({ payload }: { payload: RiskScanPayload }) {
                     <StatusBadge tone={CONFIDENCE_TONE[a.confidence] ?? "neutral"}>{a.confidence}</StatusBadge>
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">{a.riskIfWrong}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Validation Experiments (mid-level + detailed, optional) ── */}
+      {showAssumptions && payload.validationExperiments && payload.validationExperiments.length > 0 && (
+        <div className="rounded-xl border border-border bg-card shadow-card overflow-x-auto">
+          <div className="border-b border-border px-3 py-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Validation Experiments</p>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2">Risk</th>
+                <th className="px-3 py-2">Experiment</th>
+                <th className="px-3 py-2">Testing</th>
+                <th className="px-3 py-2">Expected learning</th>
+                <th className="px-3 py-2 whitespace-nowrap">By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payload.validationExperiments.map((x, i) => (
+                <tr key={i} className="border-b border-border/60 last:border-0">
+                  <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{x.ref}</td>
+                  <td className="px-3 py-2">{x.experiment}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{x.testing}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{x.learning}</td>
+                  <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{x.by}</td>
                 </tr>
               ))}
             </tbody>
@@ -598,6 +678,16 @@ function SummaryCard({ label, count, tone }: { label: string; count: number; ton
     <div className={cn("rounded-xl border px-3 py-2.5", colours[tone])}>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={cn("text-2xl font-bold tabular-nums", textColours[tone])}>{count}</p>
+    </div>
+  );
+}
+
+/** Label/value row for the Top Risks - Detail cards. */
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="text-sm">{value}</dd>
     </div>
   );
 }

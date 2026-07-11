@@ -5,7 +5,7 @@
 
 # AI PM Assistant: Your Senior PM Co-Pilot in Claude Code
 
-> 18 structured PM skills across the full delivery lifecycle. From raw stakeholder message to production release - without switching tools.
+> 17 structured PM skills across the full delivery lifecycle. From raw stakeholder message to production release - without switching tools.
 
 Designed for Claude Code. Drop it into any project and get a senior PM brain on demand.
 
@@ -22,9 +22,7 @@ Logging a decision or plan change? → `/decision-log`
 Running a retro? → `/retrospective`  
 Updating stakeholders? → `/stakeholder-update`  
 Building a roadmap? → `/roadmap`  
-Tracking the budget? → `/budget-tracker`  
-Onboarding a joiner? → `/onboarding`  
-Not sure which skill you need? → `/pm [paste anything]`
+Tracking the budget? → `/budget-tracker`
 
 If this project helps you, ⭐ the repo.
 
@@ -44,7 +42,7 @@ The result: decision-ready artefacts in minutes, not hours.
 
 **Skills** are the building blocks. Each skill file gives Claude a defined workflow, output format, and style rules for a specific PM task. Skills are loaded automatically when relevant.
 
-**Commands** are slash commands that invoke a skill directly (`/triage`, `/prd`, `/stories`). The **PM Orchestrator** (`/pm`) reads your input, picks the right skill, and chains them in delivery order.
+**Commands** are slash commands that invoke a skill directly (`/triage`, `/prd`, `/stories`).
 
 **Skill chain:**
 
@@ -68,7 +66,7 @@ claude .
 
 Claude reads `CLAUDE.md` and `.claude/CLAUDE.md` automatically, and registers slash commands from `.claude/commands/`. No configuration needed to start.
 
-> **New here? Read [INSTRUCTIONS.md](INSTRUCTIONS.md)** for a full walkthrough: starting the engine, connecting your tools step by step, and clear instructions for each of the 18 skills.
+> **New here? Read [INSTRUCTIONS.md](INSTRUCTIONS.md)** for a full walkthrough: starting the engine, connecting your tools step by step, and clear instructions for each of the 17 skills.
 
 ---
 
@@ -317,7 +315,7 @@ Extracts decisions from any input - a change request, scope revision, or prior s
 
 **When to use:**  
 - A timeline, scope, budget, or architecture decision has been made and needs an audit trail  
-- The PM Orchestrator detects a decision in a skill output and asks whether to log it  
+- A prior skill output surfaces a decision that should be logged  
 - You need a formal change record to share with stakeholders or attach to a charter
 
 **Command:** `/decision-log`
@@ -391,33 +389,6 @@ Compares spend to date against the charter budget, forecasts cost at completion,
 
 </details>
 
-<details>
-<summary><strong>onboarding</strong> - Starter brief for a new joiner</summary>
-
-**What it does:**  
-Synthesises a project's existing artefacts and context into a one-page orientation for a new team member: what the project is, where it stands, who's who, what to read first, decisions already made, live risks, and a role-specific first-week checklist.
-
-**When to use:**  
-- A new dev, QA, PM, or designer joins an in-flight project  
-- Bringing someone up to speed without a series of meetings  
-- Capturing project knowledge in one place
-
-**Command:** `/onboarding`
-
-</details>
-
----
-
-## PM Orchestrator
-
-Not sure which skill to use? The `/pm` command analyses your input and routes it automatically.
-
-```
-/pm Here's a message from my client - [paste anything]
-```
-
-Claude will read the input, identify the right skill (or chain of skills), and ask for your approval before running each step. You stay in control.
-
 ---
 
 ## Project Structure
@@ -428,20 +399,17 @@ CHANGELOG.md                         # Release notes + the v2.0 roadmap
 .claude/
   CLAUDE.md                          # Behaviour rules, output defaults, skill routing
   commands/                          # Slash command entry points (picked up by Claude Code)
-    pm.md                            # /pm - PM Orchestrator
     triage.md  risk-scan.md  charter.md  discovery.md  prd.md  stories.md
     sprint-report.md  sprint-sow.md  sprint-planning.md  meeting-notes.md
     tech-review.md  release-checklist.md  decision-log.md
     retrospective.md  stakeholder-update.md  roadmap.md  budget-tracker.md
-    onboarding.md  new-client.md
   settings.json                      # Permissions config (cat scoped to clients/)
 skills/                              # Skill definitions (project root)
-  pm/                                # PM Orchestrator (reads client/project context)
   triage/  risk-scan/  charter/  discovery/  prd/  stories/      # core chain
   sprint-report/  sprint-sow/  sprint-planning/                  # sprint skills
   meeting-notes/  tech-review/  release-checklist/  decision-log/
   retrospective/  stakeholder-update/  roadmap/                  # v2.0 additions
-  budget-tracker/  onboarding/  new-client/
+  budget-tracker/
     SKILL.md                         # each skill: SKILL.md (+ reference.md where helpful)
 tests/                               # Skill smoke tests - input + expected-structure checks
 clients/                             # Local only - excluded from version control

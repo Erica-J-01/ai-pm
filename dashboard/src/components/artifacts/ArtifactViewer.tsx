@@ -12,6 +12,7 @@ import { STEPS } from "@/components/onboarding/steps";
 import { Button } from "@/components/ui/button";
 import { ConfluencePublishDialog } from "./ConfluencePublishDialog";
 import { generatePublishMarkdown } from "@/lib/generatePublishMarkdown";
+import { openPrintable } from "@/lib/printPdf";
 import { reportError } from "@/lib/telemetry";
 import { ReleaseChecklistView } from "./ReleaseChecklistView";
 import { DecisionLogView } from "./DecisionLogView";
@@ -98,6 +99,16 @@ export function ArtifactViewer({
       navigator.clipboard.writeText(publishMarkdown)
         .then(() => notify({ title: "Markdown copied to clipboard", tone: "success" }))
         .catch(() => notify({ title: "Copy failed - check browser permissions", tone: "danger" }));
+      return;
+    }
+
+    if (dest === "pdf") {
+      // Open a clean printable document; the browser's print dialog offers
+      // "Save as PDF", giving an emailable file (used for the onboarding brief).
+      const ok = openPrintable(title, isDoc(p) ? p : undefined, publishMarkdown);
+      notify(ok
+        ? { title: "Opened the print view - choose Save as PDF", tone: "success" }
+        : { title: "Popup blocked - allow popups to download the PDF", tone: "danger" });
       return;
     }
 

@@ -17,7 +17,7 @@ import type { ArtifactPayload, DocSection, DocSkill, SkillId, StatusTone } from 
 
 const DOC_SKILLS = new Set<DocSkill>([
   "triage", "charter", "discovery", "prd", "sprint-sow",
-  "meeting-notes", "tech-review", "retrospective", "stakeholder-update",
+  "meeting-notes", "tech-review", "retrospective", "stakeholder-update", "onboarding",
 ]);
 
 export function adaptArtifact(skill: SkillId, markdown: string): ArtifactPayload | undefined {
@@ -33,7 +33,14 @@ function adaptDoc(skill: DocSkill, markdown: string): ArtifactPayload | undefine
   const sections = parseSections(markdown);
   if (sections.length === 0) return undefined; // nothing parsed - render markdown instead
   const status = skill === "stakeholder-update" ? deriveStatus(sections) : undefined;
-  return { skill, sections, ...(status ? { status } : {}) };
+  if (!status) return { skill, sections };
+  // The RAG shows in the banner, so drop the status pair to avoid rendering it twice.
+  const cleaned = sections
+    .map((s) => (s.kind === "fields"
+      ? { ...s, pairs: (s.pairs ?? []).filter((p) => !/status|rag|health/i.test(p.label)) }
+      : s))
+    .filter((s) => s.kind !== "fields" || (s.pairs?.length ?? 0) > 0);
+  return { skill, sections: cleaned, status };
 }
 
 interface RawSection {
@@ -118,11 +125,15 @@ function emitBlock(kind: Kind, lines: string[]): DocSection[] {
   if (kind === "table") return [parseTable(lines)].filter(Boolean) as DocSection[];
 
   if (kind === "list") {
-    const items = lines
+    const rawItems = lines
       .map((l) => l.replace(/^\s*([-*+]|\d+[.)])\s+/, "").trim())
       .filter(Boolean);
+    // A checklist ("- [ ] ...", "- [x] ...") renders as clean bullets - strip the
+    // marker and never let a colon in a condition flip it into a fields card.
+    const isChecklist = rawItems.some((it) => /^\[[ xX]\]/.test(it));
+    const items = rawItems.map((it) => it.replace(/^\[[ xX]\]\s*/, ""));
     const fields = items.map(parseField);
-    if (items.length > 0 && fields.every(Boolean)) {
+    if (!isChecklist && items.length > 0 && fields.every(Boolean)) {
       return [{ kind: "fields", pairs: fields as { label: string; value: string }[] }];
     }
     return [{ kind: "bullets", items: items.map(clean) }];
@@ -130,11 +141,24 @@ function emitBlock(kind: Kind, lines: string[]): DocSection[] {
 
   // text: a label/value paragraph becomes fields, otherwise prose.
   const nonBlank = lines.filter((l) => l.trim());
+
+  // House format: a bold label alone on the first line ("**Label:**") with its
+  // value on the lines beneath. Render it as a single labelled field so the live
+  // markdown matches the card theme instead of falling through to raw prose.
+  const labelOnly = /^\s*\*\*\s*(.+?)\s*\*\*\s*:?\s*$/.exec(nonBlank[0] ?? "");
+  if (labelOnly && nonBlank.length >= 2) {
+    const label = clean(labelOnly[1] ?? "").replace(/:\s*$/, "");
+    const value = clean(nonBlank.slice(1).join("\n"));
+    if (label && value) return [{ kind: "fields", pairs: [{ label, value }] }];
+  }
+
   const fields = nonBlank.map(parseField);
   if (nonBlank.length > 0 && fields.every(Boolean)) {
     return [{ kind: "fields", pairs: fields as { label: string; value: string }[] }];
   }
-  const body = lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  // Strip leading blockquote markers so a "> Sprint goal ..." line renders as
+  // clean prose instead of showing a literal ">".
+  const body = lines.map((l) => l.replace(/^\s*>\s?/, "")).join("\n").replace(/\n{3,}/g, "\n\n").trim();
   return body ? [{ kind: "text", body: clean(body) }] : [];
 }
 
@@ -183,7 +207,12 @@ function deriveStatus(sections: DocSection[]): { label: string; tone: StatusTone
       if (hit) {
         const word = hit[1] ?? "";
         const tone = TONE[word.toLowerCase()];
-        if (tone) return { label: `${word.toUpperCase()} - ${p.value}`.slice(0, 60), tone };
+        if (tone) {
+          // Drop a leading RAG word from the value so a "AMBER, down from GREEN"
+          // trend renders as "AMBER - down from GREEN", not "AMBER - AMBER, ...".
+          const rest = p.value.replace(/^\s*(green|amber|red)\b[\s,:.-]*/i, "").trim();
+          return { label: (rest ? `${word.toUpperCase()} - ${rest}` : word.toUpperCase()).slice(0, 72), tone };
+        }
       }
     }
   }

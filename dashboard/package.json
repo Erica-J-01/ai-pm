@@ -1,7 +1,7 @@
 {
   "name": "ai-pm-dashboard",
   "private": true,
-  "version": "2.6.0",
+  "version": "2.7.0",
   "type": "module",
   "scripts": {
     "skills": "node scripts/generateSkillPrompts.mjs",

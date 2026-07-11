@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { generatePublishMarkdown } from "@/lib/generatePublishMarkdown";
 import type { SkillExecution, RiskScanPayload, SprintPlanPayload, StoriesPayload, ReleaseChecklistPayload, DecisionLogPayload, BudgetTrackerPayload, RoadmapPayload, SprintReportPayload, DocPayload } from "@/types/pm";
+import { SAMPLE_ARTIFACTS } from "@/data/sampleArtifacts";
 
 /* ── factory helpers ─────────────────────────────────────────────────── */
 
@@ -119,7 +120,7 @@ const STORIES_PAYLOAD: StoriesPayload = {
 
 describe("generatePublishMarkdown - stories", () => {
   it("renders each epic as a ## heading", () => {
-    expect(generatePublishMarkdown(exec(STORIES_PAYLOAD))).toContain("## Auth Epic");
+    expect(generatePublishMarkdown(exec(STORIES_PAYLOAD))).toMatch(/## (E1 - )?Auth Epic/);
   });
   it("renders stories as a table", () => {
     const md = generatePublishMarkdown(exec(STORIES_PAYLOAD));
@@ -199,8 +200,8 @@ const BUDGET_PAYLOAD: BudgetTrackerPayload = {
 describe("generatePublishMarkdown - budget-tracker", () => {
   it("renders budget summary table", () => {
     const md = generatePublishMarkdown(exec(BUDGET_PAYLOAD));
-    expect(md).toContain("Budget Summary");
-    expect(md).toContain("Approved");
+    expect(md).toContain("## Summary");
+    expect(md).toContain("Approved budget"); // no change orders -> collapsed single row
     expect(md).toContain("100,000");
   });
   it("renders developer breakdown table", () => {
@@ -341,5 +342,67 @@ describe("table cell escaping", () => {
     const md = generatePublishMarkdown(exec(payload));
     expect(md).not.toContain("Line 1\nLine 2");
     expect(md).toContain("Line 1 Line 2");
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UPGRADED VISUAL SKILLS - the deliverable path must export the new sections
+   (guards against a renderer going stale after a payload upgrade).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+describe("generatePublishMarkdown - upgraded visual skills export their new sections", () => {
+  const md = (skill: string) => generatePublishMarkdown((SAMPLE_ARTIFACTS as Record<string, SkillExecution>)[skill]!);
+
+  it("roadmap exports Now/Next/Later buckets, hard commitments, and changes-since, not just the old Gantt", () => {
+    const m = md("roadmap");
+    expect(m).toContain("## Now");
+    expect(m).toContain("Hard Commitments");
+    expect(m).toContain("Changes since");
+    expect(m).toContain("Confidence");
+  });
+  it("sprint-report exports a close-out with a Not-assessable confidence and carry-over, never undefined%", () => {
+    const m = md("sprint-report");
+    expect(m).toContain("Not assessable");
+    expect(m).not.toContain("undefined%");
+    expect(m).toContain("Carry-over");
+  });
+  it("decision-log exports an index and a supersede link", () => {
+    const m = md("decision-log");
+    expect(m).toContain("## Index");
+    expect(m).toContain("Supersedes");
+  });
+  it("release-checklist exports conditions and a path to GO", () => {
+    const m = md("release-checklist");
+    expect(m).toContain("Conditions");
+    expect(m).toContain("Path to GO");
+  });
+  it("sprint-planning exports the velocity anchor and per-person load", () => {
+    const m = md("sprint-planning");
+    expect(m).toContain("Velocity anchor");
+    expect(m).toContain("Per-person Load");
+  });
+  it("risk-scan exports the top-risk detail, decisions needed, and stakeholder summary", () => {
+    const m = md("risk-scan");
+    expect(m).toContain("Top Risks - Detail");
+    expect(m).toContain("Decisions Needed");
+    expect(m).toContain("Stakeholder Summary");
+    expect(m).toContain("Key Assumptions");
+  });
+  it("stories exports the coverage note and priority", () => {
+    const m = md("stories");
+    expect(m).toContain("Requirement coverage");
+    expect(m).toContain("Priority");
+  });
+  it("budget-tracker exports the baseline split, forecast method, and actions", () => {
+    const m = md("budget-tracker");
+    expect(m).toContain("Current baseline");
+    expect(m).toContain("scope-based");
+    expect(m).toContain("## Variance Drivers");
+    expect(m).toContain("## Actions");
+  });
+  it("no visual-skill export contains an emoji RAG label", () => {
+    for (const s of ["risk-scan", "sprint-report", "budget-tracker", "release-checklist"]) {
+      expect(md(s)).not.toMatch(/[\u{1F534}\u{1F7E1}\u{1F7E2}]/u);
+    }
   });
 });
