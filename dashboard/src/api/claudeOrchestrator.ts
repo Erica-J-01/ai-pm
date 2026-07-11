@@ -38,7 +38,9 @@ const VALID_SKILLS: ReadonlySet<string> = new Set<SkillId>([
   "triage", "risk-scan", "charter", "discovery", "prd", "stories",
   "sprint-sow", "sprint-planning", "sprint-report", "release-checklist",
   "decision-log", "meeting-notes", "tech-review", "retrospective",
-  "stakeholder-update", "roadmap", "budget-tracker", "onboarding",
+  "stakeholder-update", "roadmap", "budget-tracker",
+  // onboarding is an app form (auto-filled from artefacts), not a Claude skill,
+  // so the orchestrator must never plan or generate it.
 ]);
 
 export function getClaudeApiKey(): string | null {
@@ -192,7 +194,6 @@ Available skills (use these exact IDs):
 - stakeholder-update: draft a stakeholder status update
 - roadmap: build a Now/Next/Later or quarterly roadmap
 - budget-tracker: track spend against budget and flag burn-rate risk
-- onboarding: generate an onboarding brief for a new joiner
 
 Rules:
 - Only include skills genuinely needed for the input - do not include all skills by default.

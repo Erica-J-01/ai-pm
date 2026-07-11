@@ -35,8 +35,6 @@ Skills are invoked by name or triggered automatically when the input matches the
 | `stakeholder-update` | `skills/stakeholder-update/` | "Status update", "update the sponsor", weekly comms → audience-ready message |
 | `roadmap` | `skills/roadmap/` | "Build a roadmap", "now/next/later", "plan the quarter" → sequenced roadmap |
 | `budget-tracker` | `skills/budget-tracker/` | "Track the budget", "burn rate", "are we on budget" → budget status + forecast |
-| `onboarding` | `skills/onboarding/` | "Onboard a joiner", "bring someone up to speed" → starter brief from existing artefacts |
-| `new-client` | `skills/new-client/` | "New client", "new project", scaffold a client/project workspace (nested model) |
 
 ---
 
@@ -59,7 +57,7 @@ Raw request
 
 After completing one skill, suggest the logical next skill unless the user redirects.
 
-**Standalone skills** (not part of the linear chain - run any time, as needed): `meeting-notes`, `sprint-report`, `tech-review`, `retrospective`, `stakeholder-update`, `roadmap`, `budget-tracker`, `onboarding`, and `new-client`. `risk-scan` runs alongside any phase; `decision-log` runs after any skill that surfaces a decision.
+**Standalone skills** (not part of the linear chain - run any time, as needed): `meeting-notes`, `sprint-report`, `tech-review`, `retrospective`, `stakeholder-update`, `roadmap`, `budget-tracker`. `risk-scan` runs alongside any phase. `decision-log` runs after any skill that surfaces a decision.
 
 ---
 
@@ -121,7 +119,6 @@ After producing any artefact, always ask the user where they want it saved or pu
 | Stakeholder update | `clients/CLIENT/project-artefacts/YYYY-MM-DD-stakeholder-update.md` |
 | Roadmap | `clients/CLIENT/project-artefacts/YYYY-MM-DD-roadmap.md` |
 | Budget status | `clients/CLIENT/project-artefacts/YYYY-MM-DD-budget-status.md` |
-| Onboarding brief | `clients/CLIENT/project-artefacts/YYYY-MM-DD-onboarding-[role].md` |
 
 **Destination-specific behaviour:**
 
@@ -160,7 +157,7 @@ The failsafe is invisible when connections exist and graceful when they don't - 
 
 ## Working Context (Client & Project)
 
-Client work uses a nested model: `clients/CLIENT/client.md` (shared, relationship-level) and `clients/CLIENT/PROJECT/context.md` (per-engagement state). This layer is **additive** - it does not change how any skill or the orchestrator runs; it only gives them memory of which client/project they're in.
+Client work uses a nested model: `clients/CLIENT/client.md` (shared, relationship-level) and `clients/CLIENT/PROJECT/context.md` (per-engagement state). This layer is **additive** - it does not change how any skill runs. It only gives skills memory of which client/project they're in.
 
 - **At the start of a working session**, if the active client/project is known or can be inferred, read both `client.md` and that project's `context.md` to recover phase, current sprint, open risks, and the last artefact produced. If they don't exist, carry on exactly as before - context files are optional.
 - **Never mix clients.** Save artefacts only under the active `clients/CLIENT/PROJECT/` path. If the active client/project is ambiguous, ask before saving.
@@ -171,7 +168,7 @@ Client work uses a nested model: `clients/CLIENT/client.md` (shared, relationshi
 
 ## Prerequisite Awareness (soft gating)
 
-This makes the orchestrator's existing chain rules explicit - it does not add new hard blocks. Before running a downstream skill, note whether its usual upstream input exists (e.g. a PRD before `/stories`, a charter/discovery before `/prd`, ticket data before `/release-checklist`). If it's missing, **say so and ask once** - e.g. *"No PRD found for this project - stories built now will be based on the description alone. Proceed, or run /prd first?"* Then do whatever the user chooses. Never silently invent the missing upstream artefact.
+This makes the existing chain rules explicit - it does not add new hard blocks. Before running a downstream skill, note whether its usual upstream input exists (e.g. a PRD before `/stories`, a charter/discovery before `/prd`, ticket data before `/release-checklist`). If it's missing, **say so and ask once** - e.g. *"No PRD found for this project - stories built now will be based on the description alone. Proceed, or run /prd first?"* Then do whatever the user chooses. Never silently invent the missing upstream artefact.
 
 ---
 

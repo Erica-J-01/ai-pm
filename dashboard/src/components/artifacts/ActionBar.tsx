@@ -42,6 +42,7 @@ export function ActionBar({
       <span className="mx-1 h-4 w-px bg-border" />
       <Button size="sm" variant="ghost" onClick={() => onAction("local")}>Save locally</Button>
       <Button size="sm" variant="ghost" onClick={() => onAction("clipboard")}>Copy markdown</Button>
+      <Button size="sm" variant="ghost" onClick={() => onAction("pdf")}>Download PDF</Button>
     </div>
   );
 }

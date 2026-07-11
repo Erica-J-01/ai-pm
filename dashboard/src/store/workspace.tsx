@@ -31,7 +31,7 @@ function mergePersistedConnectors(defaults: McpConnector[]): McpConnector[] {
     return { ...c, endpoint: s.endpoint, token: s.token, status: "connected" as ConnectionStatus };
   });
 }
-import { DEMO_CLIENTS, DEMO_PROJECTS, DEMO_CONNECTORS } from "@/data/demo";
+import { DEMO_CLIENTS, DEMO_PROJECTS, DEMO_CONNECTORS, DEMO_INTAKE_ANSWERS } from "@/data/demo";
 import { SAMPLE_ARTIFACTS } from "@/data/sampleArtifacts";
 import { STEPS, TEST_DATA, RECORD_NOUN, type StepValues } from "@/components/onboarding/steps";
 import { RECORD_SEEDS } from "@/components/onboarding/recordSeeds";
@@ -41,6 +41,7 @@ import { PORTAL_DATA } from "@/data/portalData";
 import { downstreamOf, dependenciesOf } from "@/data/skillChain";
 import { buildChainContext, intakeAnswersContext } from "@/api/artifactDigest";
 import { liveClaudeAvailable, regenerateSkillLive } from "@/api/claudeOrchestrator";
+import { onboardingValues } from "@/lib/onboarding";
 
 /** A single named record for a multi-record skill (a meeting, a sprint, etc.). */
 export interface ArtifactRecord {
@@ -239,7 +240,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
   // Intake interview answers per project, per skill. Persisted so a later
   // regeneration (B3 cascade) re-reads the answers the artefact was built with.
-  const [intakeAnswers, setIntakeAnswersState] = useState<Record<string, Partial<Record<SkillId, Record<string, string>>>>>({});
+  const [intakeAnswers, setIntakeAnswersState] = useState<Record<string, Partial<Record<SkillId, Record<string, string>>>>>(DEMO_INTAKE_ANSWERS);
   const setIntakeAnswers = useCallback((projectId: string, skill: SkillId, answers: Record<string, string>) => {
     setIntakeAnswersState((m) => ({ ...m, [projectId]: { ...(m[projectId] ?? {}), [skill]: answers } }));
   }, []);
@@ -265,14 +266,31 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     resetWorkContext();
   }, []);
 
+  // Onboarding is an app form, not a Claude skill: its brief auto-fills from the
+  // project's other artefacts (human-only fields stay blank) and refreshes on
+  // open. Every other skill uses the plain per-skill values.
+  const buildFor = useCallback((skill: SkillId, projectId?: string): SkillExecution | null => {
+    if (skill === "onboarding") {
+      const step = STEPS.find((s) => s.id === "onboarding");
+      if (!step) return null;
+      const pid = projectId ?? "";
+      const client = clients.find((c) => c.id === activeClientId);
+      const project = projects.find((p) => p.id === pid);
+      const siblings = artifactValues[pid] ?? {};
+      const merged = onboardingValues(siblings, client?.name ?? "", project?.phase ?? "", siblings.onboarding);
+      return buildExecution(step, merged, activeClientId ?? "", pid);
+    }
+    return artifactFor(skill, activeClientId, projectId, artifactValues);
+  }, [clients, projects, activeClientId, artifactValues]);
+
   const selectSkill = useCallback((id: SkillId) => {
     setActiveSkill(id);
     const claudeExec = claudeExecMap[`${activeProjectId}::${id}`];
-    setCurrent(claudeExec ?? artifactFor(id, activeClientId, activeProjectId, artifactValues));
+    setCurrent(claudeExec ?? buildFor(id, activeProjectId));
     setEditingSkill(null); // switching skills leaves any open editor
     setEditingRecordId(null);
     if (activeProjectId) markSeen(activeProjectId, id); // viewing it clears its unseen dot
-  }, [activeClientId, activeProjectId, artifactValues, claudeExecMap, markSeen]);
+  }, [activeProjectId, claudeExecMap, buildFor, markSeen]);
 
   const showExecution = useCallback((e: SkillExecution) => setCurrent(e), []);
 
@@ -492,9 +510,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const previewSkill = useCallback((skill: SkillId) => {
     const claudeExec = claudeExecMap[`${activeProjectId}::${skill}`];
-    setCurrent(claudeExec ?? artifactFor(skill, activeClientId, activeProjectId, artifactValues));
+    setCurrent(claudeExec ?? buildFor(skill, activeProjectId));
     if (activeProjectId) markSeen(activeProjectId, skill);
-  }, [activeClientId, activeProjectId, artifactValues, claudeExecMap, markSeen]);
+  }, [activeProjectId, claudeExecMap, buildFor, markSeen]);
 
   const generateSkill = useCallback((projectId: string, skill: SkillId) => {
     const seed = (TEST_DATA[skill] ?? {}) as StepValues;

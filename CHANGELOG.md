@@ -4,6 +4,24 @@ All notable changes to AI PM Assistant are recorded here.
 
 ---
 
+## [1.2.0] - 2026-07-10
+
+Trimmed the skill set to the skills that generate distinct, decision-ready artefacts, in preparation for driving the library from an application harness rather than a human running each command. Three skills were removed and two were reworked. The dashboard was kept in step and still builds.
+
+### Removed
+1. The `pm` orchestrator skill. Orchestration (analyse input, plan the chain, sequence and checkpoint the steps) is now owned by the calling app or harness, not a skill. The dashboard keeps its Execution Console, which already orchestrates in code.
+2. The `new-client` skill. Client and project scaffolding is filesystem and template setup, so it moves to the app or harness. The foundational client and project tables it defined are retained in the backend design because every other skill references them.
+3. The `onboarding` skill. Onboarding is now an app feature rather than a Claude skill: the dashboard auto-fills the starter brief from the project's other artefacts, leaves only the genuine human-input fields blank, and exports the brief to PDF so it can be emailed to the joiner.
+
+### Reworked
+1. `discovery` and `retrospective` keep both of their modes, and their synthesis mode is now explicit that it works autonomously from whatever raw material is pasted in, such as a transcript, an email thread, or a survey export, without assuming a live session was facilitated. It still never invents content the material does not contain. Both are bumped to version 1.2.0.
+
+### Dashboard
+1. Onboarding became an auto-filling form. Sibling artefacts populate client, phase, summary, who's who, what to read first, key decisions, live risks, and current status, refreshed each time the brief is opened. The five human-only fields (joining role, client sensitivities, ways of working, role-specific pointers, and the access checklist) are the only ones a person fills and the only ones that persist.
+2. Added a Download PDF action that opens a clean printable version of any artefact for saving as a PDF and emailing.
+
+---
+
 ## [1.1.0] - 2026-07-09
 
 A content upgrade to the Claude PM skills (the v1 skills track, separate from the v2 dashboard line). Every one of the 20 skills was reviewed from a working project manager's standpoint and 134 changes were applied, each verified against the skill text. The recurring fix is that the skills no longer treat every task as a one-shot, clean-input, first-run event. They now handle repeated runs, messy input, and revisions the way real delivery work does. All changes are additive and the CLI skill chain order is unchanged. Materially changed SKILL.md files are bumped to version 1.1.0, and the dashboard prompt bundle was regenerated from the updated skills.

@@ -1,7 +1,7 @@
 ---
 name: discovery-workshop
 description: Plans and documents discovery workshops and stakeholder interviews for new projects. Use whenever a PM needs to prepare for or capture output from a discovery session - including when someone says "plan a discovery workshop", "run discovery on this", "I need to interview stakeholders", "help me structure discovery", "summarise what came out of the discovery session", or shares raw notes from a workshop or interview and needs them turned into structured findings. Discovery is where projects are made or broken - the goal is to understand the real problem before anyone commits to a solution. Use this skill before requirements are written and before any build begins.
-version: 1.1.0
+version: 1.2.0
 argument-hint: <project context or workshop notes>
 allowed-tools: Read
 ---
@@ -123,6 +123,8 @@ Data the Key Unknowns depend on - volumes, cycle times, error rates, cost figure
 
 # Mode 2 - Summarise
 
+**Works from whatever raw material you paste.** Summarise does not assume a live workshop was facilitated. Meeting notes, a call transcript, an email thread, research write-ups, support tickets, or any raw context are all valid input. Synthesise findings from what is actually there, never invent sentiment or detail the material does not contain, and where the source is not a facilitated session set the Source column to what the material actually is (for example "email thread" or "research notes") and cap confidence at Medium.
+
 **Multiple sessions:** if the notes span more than one session, or a findings doc already exists for this project, consolidate into one document - do not produce a fresh doc per session. List every date and type in the header, note which session each finding came from in the Source column, raise confidence where separate sessions agree, and route contradictions between sessions to Conflicts and Disagreements.
 
 ## Output Template - Findings Summary
@@ -132,7 +134,7 @@ Data the Key Unknowns depend on - volumes, cycle times, error rates, cost figure
 ### DISCOVERY FINDINGS
 
 **Project:** [Name] | **Session date(s):** [Date or dates] | **Prepared by:** [PM]
-**Attendees:** [Roles or names] | **Session type(s):** Workshop / Interview
+**Attendees / sources:** [Roles or names, or the source if not a session] | **Source type(s):** Workshop / Interview / Notes / Email / Research / Other
 
 ---
 
@@ -154,7 +156,7 @@ Data the Key Unknowns depend on - volumes, cycle times, error rates, cost figure
 |---|---|---|---|
 | F1 | [Specific insight] | [Who said it / observed] | High / Medium / Low |
 
-*Confidence = High if stated directly, Medium if inferred, Low if contradicted by someone else.*
+*Confidence = High if stated directly, Medium if inferred, Low if contradicted by someone else. For a non-session source (email, tickets, research), cap confidence at Medium regardless, since it was not tested live in the room.*
 
 *If the notes record no speaker, set Source to "session notes - unattributed" and cap confidence at Medium. Never assign a statement to a named attendee unless the notes do.*
 

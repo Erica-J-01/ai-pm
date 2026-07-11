@@ -4,18 +4,11 @@ A Claude Code project that acts as a senior PM co-pilot. It converts raw inputs 
 
 ## Start Here
 
-**`/pm [paste anything]`** - the recommended entry point. The PM Orchestrator analyses your input, builds a skill plan, and runs the right skills in the right order. You review and approve each step.
-
-Use individual commands only when you know exactly which skill you need.
+Use a command when you know which skill you need. The table below maps each command to what it does.
 
 ---
 
 ## Commands
-
-### Orchestrator
-| Command | What It Does |
-|---|---|
-| `/pm` | PM Orchestrator - analyses input, plans and chains skills automatically |
 
 ### Individual Skills
 | Command | What It Does |
@@ -37,8 +30,6 @@ Use individual commands only when you know exactly which skill you need.
 | `/stakeholder-update` | Turn status into an audience-ready stakeholder update |
 | `/roadmap` | Build or update a Now/Next/Later or quarterly roadmap |
 | `/budget-tracker` | Track spend against the charter budget and flag burn-rate risk |
-| `/onboarding` | Generate a starter brief to bring a new joiner up to speed |
-| `/new-client` | Scaffold a client/project workspace (nested client → project model) |
 
 ## Skill Chain
 
@@ -50,9 +41,7 @@ Raw request → /triage → /risk-scan → /charter → /discovery → /prd → 
                                                                                                     /decision-log (after any skill that surfaces a decision)
 ```
 
-`/pm` handles this chain automatically.
-
-**Standalone skills** (run any time, outside the chain): `/meeting-notes`, `/sprint-report`, `/tech-review`, `/retrospective`, `/stakeholder-update`, `/roadmap`, `/budget-tracker`, `/onboarding`.
+**Standalone skills** (run any time, outside the chain): `/meeting-notes`, `/sprint-report`, `/tech-review`, `/retrospective`, `/stakeholder-update`, `/roadmap`, `/budget-tracker`.
 
 ## Detailed Instructions
 
@@ -60,7 +49,7 @@ See [.claude/CLAUDE.md](.claude/CLAUDE.md) for full behaviour rules, output defa
 
 ## Client Data
 
-All client work lives in `clients/` locally, using a nested **client → project** model: `clients/CLIENT/client.md` holds shared relationship facts, and each `clients/CLIENT/PROJECT/` holds that engagement's `context.md` and artefacts. Run `/new-client CLIENT PROJECT` to scaffold it. This folder is excluded from version control. Never commit real client names, budgets, or stakeholder details to the public repo.
+All client work lives in `clients/` locally, using a nested **client → project** model: `clients/CLIENT/client.md` holds shared relationship facts, and each `clients/CLIENT/PROJECT/` holds that engagement's `context.md` and artefacts. This folder is excluded from version control. Never commit real client names, budgets, or stakeholder details to the public repo.
 
 ## Connecting Your Tools (MCP)
 

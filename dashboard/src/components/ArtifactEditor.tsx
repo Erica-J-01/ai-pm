@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { STEPS, TEST_DATA, type StepValues } from "@/components/onboarding/steps";
 import { StructuredFields } from "@/components/onboarding/StructuredFields";
 import { buildExecution } from "@/components/onboarding/buildArtifact";
+import { onboardingValues } from "@/lib/onboarding";
 import { useWorkspace } from "@/store/workspace";
 import { useToast } from "@/store/toast";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,18 @@ export function ArtifactEditor({ skill }: { skill: SkillId }) {
 
   const recordId = ws.editingRecordId;
   const record = recordId ? ws.records[pid]?.[skill]?.find((r) => r.id === recordId) : undefined;
-  const seed = record ? record.values : (ws.artifactValues[pid]?.[skill] ?? TEST_DATA[skill] ?? {});
+  // Onboarding auto-fills from the project's other artefacts (human-only fields
+  // stay blank), so the editor seeds from the same merge the canvas uses.
+  const onboardingSeed = () => {
+    const client = ws.clients.find((c) => c.id === ws.activeClientId);
+    const project = ws.projects.find((p) => p.id === pid);
+    return onboardingValues(ws.artifactValues[pid] ?? {}, client?.name ?? "", project?.phase ?? "", ws.artifactValues[pid]?.onboarding);
+  };
+  const seed = record
+    ? record.values
+    : skill === "onboarding"
+      ? onboardingSeed()
+      : (ws.artifactValues[pid]?.[skill] ?? TEST_DATA[skill] ?? {});
   const [values, setValues] = useState<StepValues>(seed);
   // Artifact shown before editing began - restored on Cancel.
   const prevRef = useRef(ws.current);
