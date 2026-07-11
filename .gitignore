@@ -27,6 +27,7 @@ Clients/
 
 # Claude Code local settings — personal overrides, never shared
 .claude/settings.local.json
+.claude/launch.json
 
 # Environment / secrets
 .env
