@@ -4,6 +4,26 @@ All notable changes to AI PM Assistant are recorded here.
 
 ---
 
+## [2.7.0] - 2026-07-10
+
+A dashboard release that makes every skill's artefact render its full structured output, keeps the publish and export path in step, and expands the backend design doc into a per-skill storage plan. Paired with the v1.2.0 skills change in the same push. All changes are additive, the app builds clean, and the full test suite is green.
+
+### Per-skill artefact views
+1. Every visual skill now renders all of the items it generates rather than a summary. The decision log moves from one wide table to a slim index plus a detail block per decision. The roadmap shows horizon buckets and a timeline. The sprint report shows velocity trend and goal attainment. Sprint planning shows per-person load and the bottleneck owner. The budget tracker shows the baseline and forecast split. Risk scan, stories, and the release checklist render their full detail.
+2. The generic document view now renders a heading on every section kind, so field-group sections are labelled like the rest.
+
+### Publish and export
+1. Rewrote the publish-markdown renderers for the visual skills so the Copy, Download, and Confluence deliverables carry the upgraded content instead of a stale subset, with no emoji in the output.
+
+### Testable helpers and coverage
+1. Extracted pure helpers with deterministic tests: sprint load and velocity assessment in `sprint.ts` and the budget verdict in `budget.ts`.
+2. Added test suites covering the markdown adapter, the publish renderers, and the sprint, budget, decision-log, release, and roadmap helpers.
+
+### Backend design
+1. Expanded `dashboard/BACKEND_TODO.md` with a PostgreSQL storage design per artefact skill, plus the foundational client and project tenant tables and the orchestration layer as app/harness-owned sections. Each follows the project's mandatory backend and security rules. These are planning designs only, with no migration executed.
+
+---
+
 ## [1.2.0] - 2026-07-10
 
 Trimmed the skill set to the skills that generate distinct, decision-ready artefacts, in preparation for driving the library from an application harness rather than a human running each command. Three skills were removed and two were reworked. The dashboard was kept in step and still builds.
