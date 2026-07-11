@@ -22,6 +22,19 @@ const GOAL_STATUS_MAP: Record<string, GoalStatus> = {
 
 const rows = (values: StepValues, name: string): Row[] => (Array.isArray(values[name]) ? (values[name] as Row[]) : []);
 const str = (values: StepValues, name: string): string => (typeof values[name] === "string" ? (values[name] as string) : "");
+
+/** Parse a YYYY-MM-DD string to a whole-day count (UTC), or null if malformed. */
+function parseDay(s: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
+  if (!m) return null;
+  const t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return Number.isNaN(t) ? null : Math.round(t / 86400000);
+}
+/** Format a whole-day count (UTC) back to YYYY-MM-DD. */
+function formatDay(day: number): string {
+  const d = new Date(day * 86400000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
 const tags = (values: StepValues, name: string): string[] => (Array.isArray(values[name]) ? (values[name] as string[]) : []);
 const epicGroups = (values: StepValues, name: string): EpicGroup[] => (Array.isArray(values[name]) ? (values[name] as EpicGroup[]) : []);
 
@@ -363,15 +376,37 @@ const RM_BUCKET_ORDER = ["Now", "Next", "Later"];
 const RM_SPAN: Record<string, string> = { Now: "roughly this quarter", Next: "the following quarter", Later: "beyond that" };
 
 function buildRoadmap(values: StepValues): RoadmapPayload {
-  const weeks = Number(str(values, "weeks")) || 8;
+  // Weeks are entered manually (no fixed cap), clamped to a sane 1..52 so a
+  // stray large value cannot blow up the timeline grid. Per-item start/end weeks
+  // below are clamped into this range.
+  const weeks = Math.min(52, Math.max(1, Number(str(values, "weeks")) || 8));
+  // Optional week-1 anchor. When set, item weeks and dates are kept in sync.
+  const anchorDay = parseDay(str(values, "anchorDate"));
   const tasks: RoadmapTask[] = rows(values, "tasks")
     .filter((t) => t.name?.trim())
     .map((t) => {
-      const s = Math.min(weeks, Math.max(1, Number(t.startWeek) || 1));
-      const e = Math.min(weeks, Math.max(s, Number(t.endWeek) || s));
+      let sWeek = Number(t.startWeek) || 0;
+      let eWeek = Number(t.endWeek) || 0;
+      let sDate = t.startDate?.trim() || "";
+      let eDate = t.endDate?.trim() || "";
+      // With an anchor date, a supplied date drives its week number, a missing
+      // date is filled from its week, and an item with no end runs to the end of
+      // the timeline. Without an anchor, weeks and dates stay independent.
+      if (anchorDay !== null) {
+        const sDay = parseDay(sDate);
+        const eDay = parseDay(eDate);
+        if (sDay !== null) sWeek = Math.floor((sDay - anchorDay) / 7) + 1;
+        if (eDay !== null) eWeek = Math.floor((eDay - anchorDay) / 7) + 1;
+        if (!sWeek || sWeek < 1) sWeek = 1;
+        if (!eWeek) eWeek = weeks;
+        if (!sDate) sDate = formatDay(anchorDay + (sWeek - 1) * 7);
+        if (!eDate) eDate = formatDay(anchorDay + eWeek * 7 - 1);
+      }
+      const s = Math.min(weeks, Math.max(1, sWeek || 1));
+      const e = Math.min(weeks, Math.max(s, eWeek || s));
       return {
         name: t.name ?? "", lane: t.lane?.trim() || "Lane", startWeek: s, endWeek: e,
-        startDate: t.startDate?.trim() || undefined, endDate: t.endDate?.trim() || undefined,
+        startDate: sDate || undefined, endDate: eDate || undefined,
       };
     });
   const lanes = [...new Set(tasks.map((t) => t.lane))];

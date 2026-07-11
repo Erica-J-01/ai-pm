@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   type McpConnector, type SkillExecution, type SaveDestination, type SkillId,
   isRiskScan, isReleaseChecklist, isDecisionLog, isSprintPlan,
@@ -62,6 +62,16 @@ export function ArtifactViewer({
     () => (execution ? generatePublishMarkdown(execution) : ""),
     [execution],
   );
+
+  // Open every artifact scrolled to the top. Switching skills or records used to
+  // leave the canvas wherever the previous artifact was scrolled to, so a tall
+  // artifact could open at the bottom. Skip while the structured editor is open
+  // so the live preview does not jump to the top on each keystroke.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (ws.editingSkill) return;
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [execution, ws.editingSkill]);
 
   if (!execution) return <EmptyState />;
 
@@ -189,7 +199,7 @@ export function ArtifactViewer({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-auto pr-1">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pr-1">
         {empty ? (
           <div className="grid h-full place-items-center text-center">
             <div className="max-w-xs space-y-1">
