@@ -363,7 +363,10 @@ const RM_BUCKET_ORDER = ["Now", "Next", "Later"];
 const RM_SPAN: Record<string, string> = { Now: "roughly this quarter", Next: "the following quarter", Later: "beyond that" };
 
 function buildRoadmap(values: StepValues): RoadmapPayload {
-  const weeks = Number(str(values, "weeks")) || 8;
+  // Weeks are entered manually (no fixed cap), clamped to a sane 1..52 so a
+  // stray large value cannot blow up the timeline grid. Per-item start/end weeks
+  // below are clamped into this range.
+  const weeks = Math.min(52, Math.max(1, Number(str(values, "weeks")) || 8));
   const tasks: RoadmapTask[] = rows(values, "tasks")
     .filter((t) => t.name?.trim())
     .map((t) => {

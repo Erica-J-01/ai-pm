@@ -80,8 +80,6 @@ const CATEGORIES = [
   "Communications", "Dependencies", "Approvals", "Post-Release Readiness", "Hotfix",
 ];
 const RAG = ["green", "amber", "red"];
-const WEEKS = ["4", "6", "8", "10", "12"];
-const WEEKNUM = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 const DECISION_AREA = ["Scope", "Timeline", "Budget", "Architecture", "Team", "Process", "Other"];
 const CHANGE_STATUS = ["Proposed", "Under Review", "Approved", "Rejected", "Superseded"];
 const RISK_CATEGORY = ["Delivery", "Technical", "Stakeholder", "Business"];
@@ -548,12 +546,12 @@ export const STEPS: OnbStep[] = [
       { name: "size", label: "Size (optional)", kind: "select", options: RM_SIZE },
       { name: "note", label: "Why now / depends on / open question", kind: "text" },
     ]},
-    { name: "weeks", label: "Timeline weeks (optional)", kind: "select", options: WEEKS },
+    { name: "weeks", label: "Timeline weeks (optional)", kind: "text", placeholder: "number of weeks, e.g. 16" },
     { name: "tasks", label: "Timeline items (optional)", kind: "list", addLabel: "Add item", itemFields: [
       { name: "name", label: "Item", kind: "text" },
       { name: "lane", label: "Bucket / lane", kind: "text", placeholder: "e.g. Now" },
-      { name: "startWeek", label: "Start week", kind: "select", options: WEEKNUM },
-      { name: "endWeek", label: "End week", kind: "select", options: WEEKNUM },
+      { name: "startWeek", label: "Start week", kind: "text", placeholder: "e.g. 1" },
+      { name: "endWeek", label: "End week", kind: "text", placeholder: "e.g. 16" },
       { name: "startDate", label: "Start date", kind: "text", placeholder: "optional, e.g. 2026-06-09" },
       { name: "endDate", label: "End date", kind: "text", placeholder: "optional" },
     ]},
