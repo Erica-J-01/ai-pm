@@ -3,6 +3,7 @@ import { type SprintPlanPayload, type BacklogPriority, type BacklogEstimate, typ
 import { cn } from "@/lib/utils";
 import { sprintLoadBreakdown } from "@/lib/sprint";
 import { StatusBadge } from "./StatusBadge";
+import { TableCard as Table } from "./Panel";
 
 const PRIO_TONE: Record<BacklogPriority, StatusTone> = { P0: "danger", P1: "warning", P2: "neutral" };
 
@@ -196,16 +197,3 @@ function Flag({ tone, children }: { tone: "danger" | "warning"; children: ReactN
   );
 }
 
-function Table({ caption, head, children }: { caption: string; head: string[]; children: ReactNode }) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
-      <p className="border-b border-border px-3 py-2 text-sm font-semibold">{caption}</p>
-      <table className="w-full text-sm">
-        <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>{head.map((h) => <th key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  );
-}

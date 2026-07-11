@@ -1,9 +1,9 @@
 import type { OrchestratorApi } from "@/api/orchestrator";
 import { mockApi } from "@/api/mockOrchestrator";
 import { realApi } from "@/api/realOrchestrator";
-import { claudeApi, getClaudeApiKey, liveClaudeAvailable } from "@/api/claudeOrchestrator";
+import { claudeApi, liveClaudeAvailable } from "@/api/claudeOrchestrator";
 
-export { mockApi, realApi, claudeApi, getClaudeApiKey, liveClaudeAvailable };
+export { liveClaudeAvailable };
 export type { OrchestratorApi };
 
 /** Flip to the real backend with VITE_USE_REAL_API=true; mock is the default. */
@@ -21,6 +21,3 @@ export function getOrchestratorApi(): OrchestratorApi {
   if (USE_REAL) return realApi;
   return mockApi;
 }
-
-/** Static singleton - used for module-level imports. Resolved at import time. */
-export const orchestratorApi: OrchestratorApi = getOrchestratorApi();

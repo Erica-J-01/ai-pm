@@ -1,4 +1,4 @@
-import type { ArtifactPayload, DocSection, DocSkill, SkillId, StatusTone } from "@/types/pm";
+import { DOC_SKILL_IDS, type ArtifactPayload, type DocSection, type DocSkill, type SkillId, type StatusTone } from "@/types/pm";
 
 /**
  * Best-effort markdown -> typed payload adapter.
@@ -15,13 +15,8 @@ import type { ArtifactPayload, DocSection, DocSkill, SkillId, StatusTone } from 
  * always safe.
  */
 
-const DOC_SKILLS = new Set<DocSkill>([
-  "triage", "charter", "discovery", "prd", "sprint-sow",
-  "meeting-notes", "tech-review", "retrospective", "stakeholder-update", "onboarding",
-]);
-
 export function adaptArtifact(skill: SkillId, markdown: string): ArtifactPayload | undefined {
-  if (DOC_SKILLS.has(skill as DocSkill)) {
+  if (DOC_SKILL_IDS.has(skill)) {
     return adaptDoc(skill as DocSkill, markdown);
   }
   return undefined;

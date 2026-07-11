@@ -150,14 +150,35 @@ export interface ConfluenceTestResult {
  * A network/CORS failure surfaces as a "Failed to fetch" Error - callers
  * should detect that string and show a proxy-needed message.
  */
+/** Basic (email:token) or Bearer (PAT) auth header for Confluence. */
+const authHeaderFor = (token: string) => (token.includes(":") ? `Basic ${btoa(token)}` : `Bearer ${token}`);
+
+/** Best-effort error message from a failed Confluence response. */
+async function errorMessage(res: Response): Promise<string> {
+  let msg = `Confluence responded ${res.status}`;
+  try {
+    const err = await res.json() as Record<string, unknown>;
+    msg = (err.message ?? err.statusMessage ?? msg) as string;
+  } catch { /* keep default */ }
+  return msg;
+}
+
+/** Build the publish result from a Confluence content response. */
+function toPublishResult(
+  data: { id: string; title: string; _links?: { webui?: string; base?: string } },
+  baseUrl: string, spaceKey: string, fallbackTitle: string,
+): ConfluencePublishResult {
+  const origin = (data._links?.base ?? baseUrl).replace(/\/$/, "");
+  const webuiPath = data._links?.webui ?? `/wiki/spaces/${spaceKey}/pages/${data.id}`;
+  return { pageId: data.id, url: `${origin}${webuiPath}`, title: data.title ?? fallbackTitle };
+}
+
 export async function testConfluenceConnection(params: {
   baseUrl: string;
   token: string; // "email:api_token" → Basic | bare PAT → Bearer
 }): Promise<ConfluenceTestResult> {
   const { baseUrl, token } = params;
-  const authHeader = token.includes(":")
-    ? `Basic ${btoa(token)}`
-    : `Bearer ${token}`;
+  const authHeader = authHeaderFor(token);
 
   const res = await confluenceFetch(
     `${apiBase(baseUrl)}/rest/api/space?limit=5`,
@@ -188,9 +209,7 @@ export async function publishToConfluence(
 
   const storageValue = markdownToStorage(markdown);
 
-  const authHeader = token.includes(":")
-    ? `Basic ${btoa(token)}`
-    : `Bearer ${token}`;
+  const authHeader = authHeaderFor(token);
 
   const body: Record<string, unknown> = {
     type: "page",
@@ -209,11 +228,7 @@ export async function publishToConfluence(
   const res = await confluenceFetch(endpoint, "POST", authHeader, JSON.stringify(body));
 
   if (!res.ok) {
-    let msg = `Confluence responded ${res.status}`;
-    try {
-      const err = await res.json() as Record<string, unknown>;
-      msg = (err.message ?? err.statusMessage ?? msg) as string;
-    } catch { /* keep default */ }
+    const msg = await errorMessage(res);
     // Confluence returns 400 with "already exists" when the title is a duplicate.
     if (res.status === 400 && /already exists/i.test(msg)) {
       throw new ConfluenceDuplicateError(title);
@@ -221,19 +236,8 @@ export async function publishToConfluence(
     throw new Error(msg);
   }
 
-  const data = await res.json() as {
-    id: string;
-    title: string;
-    _links?: { webui?: string; base?: string };
-  };
-
-  // Prefer the base URL from the API response (_links.base) - it is always the
-  // correct Confluence origin. Fall back to the user-supplied baseUrl.
-  const origin = (data._links?.base ?? baseUrl).replace(/\/$/, "");
-  const webuiPath = data._links?.webui ?? `/wiki/spaces/${spaceKey}/pages/${data.id}`;
-  const pageUrl = `${origin}${webuiPath}`;
-
-  return { pageId: data.id, url: pageUrl, title: data.title ?? title };
+  const data = await res.json() as { id: string; title: string; _links?: { webui?: string; base?: string } };
+  return toPublishResult(data, baseUrl, spaceKey, title);
 }
 
 /**
@@ -245,7 +249,7 @@ export async function updateConfluencePage(
 ): Promise<ConfluencePublishResult> {
   const { baseUrl, token, title, spaceKey, markdown } = params;
   const storageValue = markdownToStorage(markdown);
-  const authHeader = token.includes(":") ? `Basic ${btoa(token)}` : `Bearer ${token}`;
+  const authHeader = authHeaderFor(token);
 
   // 1. Find the existing page to get its ID and current version number.
   const searchUrl =
@@ -284,21 +288,9 @@ export async function updateConfluencePage(
   );
 
   if (!updateRes.ok) {
-    let msg = `Confluence responded ${updateRes.status}`;
-    try {
-      const err = await updateRes.json() as Record<string, unknown>;
-      msg = (err.message ?? err.statusMessage ?? msg) as string;
-    } catch { /* keep default */ }
-    throw new Error(msg);
+    throw new Error(await errorMessage(updateRes));
   }
 
-  const data = await updateRes.json() as {
-    id: string;
-    title: string;
-    _links?: { webui?: string; base?: string };
-  };
-
-  const origin = (data._links?.base ?? baseUrl).replace(/\/$/, "");
-  const webuiPath = data._links?.webui ?? `/wiki/spaces/${spaceKey}/pages/${data.id}`;
-  return { pageId: data.id, url: `${origin}${webuiPath}`, title: data.title ?? title };
+  const data = await updateRes.json() as { id: string; title: string; _links?: { webui?: string; base?: string } };
+  return toPublishResult(data, baseUrl, spaceKey, title);
 }

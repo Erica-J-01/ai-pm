@@ -1,10 +1,5 @@
 /** Structured onboarding schema: scalars, tag inputs, list rows, and epic groups. */
 
-/** Skills that hold a collection of records (multiple meetings, sprints, etc.). */
-export const MULTI_RECORD_SKILLS: string[] = [
-  "meeting-notes", "tech-review", "retrospective", "stakeholder-update",
-  "decision-log", "release-checklist", "sprint-report", "sprint-planning",
-];
 /** Multi-record skills whose records can be exported to Word/PDF from the list. */
 export const EXPORTABLE_SKILLS: string[] = [
   "meeting-notes", "tech-review", "retrospective", "stakeholder-update", "decision-log",
@@ -20,6 +15,9 @@ export const RECORD_NOUN: Record<string, string> = {
   "sprint-report": "Sprint report",
   "sprint-planning": "Sprint plan",
 };
+
+/** Skills that hold a collection of records, derived from RECORD_NOUN so the two never drift. */
+export const MULTI_RECORD_SKILLS: string[] = Object.keys(RECORD_NOUN);
 
 export type Row = Record<string, string>;
 export interface EpicGroup { name: string; stories: Row[] }
@@ -199,7 +197,7 @@ export const STEPS: OnbStep[] = [
     { name: "findings", label: "Key findings", kind: "list", addLabel: "Add finding", itemFields: [
       { name: "finding", label: "Finding", kind: "text" },
       { name: "source", label: "Source", kind: "text", placeholder: "Who said it, or 'unattributed'" },
-      { name: "confidence", label: "Confidence", kind: "select", options: ["High", "Medium", "Low"] },
+      { name: "confidence", label: "Confidence", kind: "select", options: RM_CONFIDENCE },
     ]},
     { name: "conflicts", label: "Conflicts / disagreements", kind: "list", addLabel: "Add conflict", itemFields: [
       { name: "conflict", label: "Conflict", kind: "text" },

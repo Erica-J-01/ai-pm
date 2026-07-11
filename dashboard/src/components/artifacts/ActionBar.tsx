@@ -12,19 +12,16 @@ const ACTIONS: { id: ConnectorId; label: string; verb: string }[] = [
  * isn't connected, with a title that states the failsafe (local/copy instead).
  */
 export function ActionBar({
-  connectors, allowed, onAction,
+  connectors, onAction,
 }: {
   connectors: McpConnector[];
-  /** Limit to the connectors this skill can use; omit to show all three. */
-  allowed?: ConnectorId[];
   onAction: (dest: SaveDestination) => void;
 }) {
   const statusOf = (id: ConnectorId) => connectors.find((c) => c.id === id)?.status ?? "disconnected";
-  const visible = ACTIONS.filter((a) => !allowed || allowed.includes(a.id));
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-      {visible.map((a) => {
+      {ACTIONS.map((a) => {
         const connected = statusOf(a.id) === "connected";
         return (
           <Button

@@ -1,7 +1,7 @@
 import { type RoadmapPayload, type RoadmapTask, type RoadmapConfidence, type StatusTone } from "@/types/pm";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
-import { Panel } from "./Panel";
+import { ListPanel, TableCard as Table } from "./Panel";
 
 /** Lane accent colours, cycled by index. */
 const LANE_BAR = [
@@ -151,24 +151,3 @@ export function RoadmapView({ payload }: { payload: RoadmapPayload }) {
   );
 }
 
-function ListPanel({ title, items }: { title: string; items: string[] }) {
-  return (
-    <Panel title={title}>
-      <ul className="list-disc space-y-1 pl-5 text-sm">{items.map((r, i) => <li key={i}>{r}</li>)}</ul>
-    </Panel>
-  );
-}
-
-function Table({ caption, head, children }: { caption: string; head: string[]; children: React.ReactNode }) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
-      <p className="border-b border-border px-3 py-2 text-sm font-semibold">{caption}</p>
-      <table className="w-full text-sm">
-        <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>{head.map((h) => <th key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  );
-}

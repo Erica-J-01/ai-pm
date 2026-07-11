@@ -198,8 +198,6 @@ export interface ExecutionChunk {
   status: ExecutionStatus;
   /** Markdown delta for live rendering. */
   delta?: string;
-  /** Emitted once a typed section finalises. */
-  section?: ArtifactSection;
 }
 
 /**
@@ -221,12 +219,6 @@ export interface SkillExecution<TPayload extends ArtifactPayload = ArtifactPaylo
   completedAt?: string;
   /** Where it was saved/published, if anywhere yet. */
   savedTo?: SaveDestination[];
-}
-
-export interface ArtifactSection {
-  key: string;
-  heading: string;
-  markdown: string;
 }
 
 /* ========================================================================
@@ -805,18 +797,15 @@ export const CHECKLIST_TONE: Record<ChecklistStatus, StatusTone> = {
   "N/A": "na",
 };
 
-export const VERDICT_TONE: Record<ReleaseVerdict, StatusTone> = {
-  GO: "success",
-  "NO-GO": "danger",
-  "CONDITIONAL GO": "warning",
-};
-
 export const PRIORITY_TONE: Record<Priority, StatusTone> = {
   "act-now": "danger",
   monitor: "warning",
   contingency: "warning",
   log: "success",
 };
+
+/** RAG status to Tailwind tone, shared by the risk, budget, and sprint-report views. */
+export const RAG_TONE: Record<RagStatus, StatusTone> = { red: "danger", amber: "warning", green: "success" };
 
 export function isRiskScan(p?: ArtifactPayload): p is RiskScanPayload {
   return p?.skill === "risk-scan";
@@ -842,10 +831,12 @@ export function isRoadmap(p?: ArtifactPayload): p is RoadmapPayload {
 export function isStories(p?: ArtifactPayload): p is StoriesPayload {
   return p?.skill === "stories";
 }
-const DOC_SKILLS = new Set<string>([
+/** Canonical set of skills whose artifact is a DocPayload. The markdown adapter
+ *  and isDoc share this so the two can never drift apart. */
+export const DOC_SKILL_IDS = new Set<string>([
   "triage", "charter", "discovery", "prd", "sprint-sow",
   "meeting-notes", "tech-review", "retrospective", "stakeholder-update", "onboarding",
 ]);
 export function isDoc(p?: ArtifactPayload): p is DocPayload {
-  return !!p && DOC_SKILLS.has(p.skill);
+  return !!p && DOC_SKILL_IDS.has(p.skill);
 }

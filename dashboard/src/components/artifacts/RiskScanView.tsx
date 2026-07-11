@@ -7,7 +7,7 @@ import { Sparkles } from "lucide-react";
 import {
   type RiskScanPayload, type RiskEntry, type Priority, type HML, type StatusTone, type RagStatus,
   type RiskProximity, type RiskDepth,
-  PRIORITY_TONE,
+  PRIORITY_TONE, RAG_TONE,
 } from "@/types/pm";
 
 /** Depth label + how many register rows each level shows (high-level shows fewest). */
@@ -37,7 +37,6 @@ const PRIORITY_LABEL: Record<Priority, string> = {
 };
 const PRIORITIES: Priority[] = ["act-now", "monitor", "contingency", "log"];
 const HML_TONE: Record<HML, StatusTone> = { H: "danger", M: "warning", L: "neutral" };
-const RAG_TONE: Record<RagStatus, StatusTone> = { red: "danger", amber: "warning", green: "success" };
 const CONFIDENCE_TONE: Record<string, StatusTone> = { High: "success", Medium: "warning", Low: "danger" };
 const PROXIMITY_ORDER: RiskProximity[] = ["Week 1-2", "Month 1", "Month 2-3", "Later"];
 const PROXIMITY_LABEL: Record<RiskProximity, string> = {
@@ -596,8 +595,7 @@ function ExecutiveDashboard({ register }: { register: RiskEntry[] }) {
   const greens = register.filter((r) => RAG_OF[r.priority] === "green").length;
   const byCat = countBy(register, (r) => r.category);
   const byOwner = countBy(register, (r) => r.owner);
-  const PROX_ORDER = ["Week 1-2", "Month 1", "Month 2-3", "Later"];
-  const timeline = PROX_ORDER.map((p) => [p, register.filter((r) => (r.proximity ?? "Later") === p).length] as [string, number]);
+  const timeline = PROXIMITY_ORDER.map((p) => [p, register.filter((r) => (r.proximity ?? "Later") === p).length] as [string, number]);
   const topCat = byCat[0]?.[0] ?? "-";
 
   return (

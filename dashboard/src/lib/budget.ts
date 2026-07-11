@@ -1,4 +1,9 @@
-import type { RagStatus } from "@/types/pm";
+import type { CommercialModel, RagStatus } from "@/types/pm";
+
+/** Currency formatter shared by the budget view and the publish renderer. */
+export const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+/** Commercial-model display labels, shared by the budget view and publish renderer. */
+export const MODEL_LABEL: Record<CommercialModel, string> = { "fixed-price": "Fixed price", "time-and-materials": "T&M", retainer: "Retainer" };
 
 /**
  * Budget RAG against the current baseline (original budget plus approved changes):

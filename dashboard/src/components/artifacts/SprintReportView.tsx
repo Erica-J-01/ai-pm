@@ -2,13 +2,13 @@ import {
   Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
+  RAG_TONE,
   type SprintReportPayload, type RagStatus, type StatusTone,
   type GoalStatus, type VelocityAssessment, type RiskLevel,
 } from "@/types/pm";
 import { StatusBadge } from "./StatusBadge";
-import { Panel } from "./Panel";
+import { Panel, ListPanel } from "./Panel";
 
-const RAG_TONE: Record<RagStatus, StatusTone> = { red: "danger", amber: "warning", green: "success" };
 const RAG_LABEL: Record<RagStatus, string> = { red: "Red", amber: "Amber", green: "Green" };
 
 const GOAL_TONE: Record<GoalStatus, StatusTone> = { "on-track": "success", "at-risk": "warning", missed: "danger", "not-stated": "neutral" };
@@ -121,15 +121,6 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function ListPanel({ title, items }: { title: string; items: string[] }) {
-  return (
-    <Panel title={title}>
-      <ul className="list-disc space-y-1 pl-5 text-sm">
-        {items.map((r, i) => <li key={i}>{r}</li>)}
-      </ul>
-    </Panel>
-  );
-}
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (

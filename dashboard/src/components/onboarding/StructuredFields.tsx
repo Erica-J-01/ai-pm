@@ -7,6 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** A blank row: empty strings, with selects defaulting to their first option. */
+function blankRow(fields: ScalarField[]): Row {
+  const row: Row = {};
+  fields.forEach((f) => { row[f.name] = f.kind === "select" ? (f.options?.[0] ?? "") : ""; });
+  return row;
+}
+
 /**
  * Renders a step's structured inputs (scalars, tags, list rows, epic groups).
  * List rows lay out as a wrapping grid of labelled fields so nothing is
@@ -37,11 +44,7 @@ export function StructuredFields({
       {visible.map((f) => {
         if (f.kind === "list") {
           const list = Array.isArray(values[f.name]) ? (values[f.name] as Row[]) : [];
-          const addRow = () => {
-            const blank: Row = {};
-            f.itemFields.forEach((itf) => { blank[itf.name] = itf.kind === "select" ? (itf.options?.[0] ?? "") : ""; });
-            set(f.name, [...list, blank]);
-          };
+          const addRow = () => set(f.name, [...list, blankRow(f.itemFields)]);
           return (
             <section key={f.name} className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-card">
               <SectionTitle label={f.label} required={f.required} human={f.human} count={list.length} />
@@ -213,11 +216,7 @@ function EpicsEditor({
 }) {
   const setEpic = (idx: number, patch: Partial<EpicGroup>) => onChange(value.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
   const addEpic = () => onChange([...value, { name: "", stories: [] }]);
-  const addStory = (ei: number) => {
-    const blank: Row = {};
-    field.storyFields.forEach((sf) => { blank[sf.name] = sf.kind === "select" ? (sf.options?.[0] ?? "") : ""; });
-    setEpic(ei, { stories: [...(value[ei]?.stories ?? []), blank] });
-  };
+  const addStory = (ei: number) => setEpic(ei, { stories: [...(value[ei]?.stories ?? []), blankRow(field.storyFields)] });
 
   return (
     <div className="space-y-3">

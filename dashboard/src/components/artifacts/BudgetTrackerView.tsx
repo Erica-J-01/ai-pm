@@ -1,16 +1,13 @@
-import { type ReactNode } from "react";
 import {
   Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { type BudgetTrackerPayload, type RagStatus, type CommercialModel, type StatusTone } from "@/types/pm";
+import { RAG_TONE, type BudgetTrackerPayload, type RagStatus, type StatusTone } from "@/types/pm";
+import { money, MODEL_LABEL } from "@/lib/budget";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
-import { Panel } from "./Panel";
+import { Panel, TableCard as SmallTable } from "./Panel";
 
-const RAG_TONE: Record<RagStatus, StatusTone> = { red: "danger", amber: "warning", green: "success" };
 const RAG_LABEL: Record<RagStatus, string> = { red: "Over / at risk", amber: "Watch", green: "On budget" };
-const MODEL_LABEL: Record<CommercialModel, string> = { "fixed-price": "Fixed price", "time-and-materials": "T&M", retainer: "Retainer" };
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 /** /budget-tracker : baseline split, forecast at completion (run-rate vs scope-based),
  *  a RAG verdict with the rule that fired, burn/exhaustion, variance drivers, and actions. */
@@ -190,16 +187,3 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: S
   );
 }
 
-function SmallTable({ caption, head, children }: { caption: string; head: string[]; children: ReactNode }) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
-      <p className="border-b border-border px-3 py-2 text-sm font-semibold">{caption}</p>
-      <table className="w-full text-sm">
-        <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>{head.map((h) => <th key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  );
-}

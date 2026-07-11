@@ -4,10 +4,6 @@
  * (persisted by the connector system, cleared when the tab closes) and
  * forwarded as a request header; it never leaves the local machine.
  *
- * Skill system prompts are loaded from `virtual:skill-prompts` - a Vite virtual
- * module that reads every skills/<id>/SKILL.md + reference.md at dev-server
- * start. Edits to those files are picked up on the next restart automatically.
- *
  * planOrchestration  -> Claude picks the right skills and writes a rationale.
  * streamStep         -> Claude runs a single skill with its full SKILL.md prompt.
  *
@@ -42,6 +38,9 @@ const VALID_SKILLS: ReadonlySet<string> = new Set<SkillId>([
   // onboarding is an app form (auto-filled from artefacts), not a Claude skill,
   // so the orchestrator must never plan or generate it.
 ]);
+
+/** Strip a leading/trailing markdown code fence from a model JSON response. */
+const stripFence = (raw: string) => raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
 
 export function getClaudeApiKey(): string | null {
   try {
@@ -229,7 +228,7 @@ export const claudeApi: OrchestratorApi = {
     // raw TypeError from .map on undefined.
     let parsed: { summary?: unknown; steps?: unknown };
     try {
-      const clean = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+      const clean = stripFence(raw);
       parsed = JSON.parse(clean);
     } catch {
       throw new Error("Claude returned an unexpected response. Please try again.");
@@ -324,7 +323,7 @@ export async function detectIntakeSignals(
     `\n\nReturn the JSON array of applicable ids (a subset of: ${candidates.map((c) => c.id).join(", ")}).`;
   try {
     const { text: raw } = await callClaude(apiKey, system, user, 256);
-    const clean = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    const clean = stripFence(raw);
     const ids = JSON.parse(clean) as unknown;
     if (!Array.isArray(ids)) return candidates.map((c) => c.id);
     const valid = new Set(candidates.map((c) => c.id));

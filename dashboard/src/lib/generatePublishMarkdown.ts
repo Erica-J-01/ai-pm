@@ -19,6 +19,7 @@ import type {
   DocPayload,
 } from "@/types/pm";
 import { sprintLoadBreakdown } from "@/lib/sprint";
+import { money, MODEL_LABEL } from "@/lib/budget";
 
 /* ── helpers ───────────────────────────────────────────────────────────── */
 
@@ -46,9 +47,7 @@ const PRIORITY_LABEL: Record<string, string> = {
 // Plain text RAG - no emoji (house style, and emoji paste badly into steering packs).
 const RAG_LABEL: Record<string, string> = { red: "Red", amber: "Amber", green: "Green" };
 const sizeLabel = (e: BacklogEstimate) => (typeof e === "number" ? `${e}` : e);
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const signedMoney = (n: number) => `${n < 0 ? "-" : "+"}${money(Math.abs(n))}`;
-const MODEL_LABEL: Record<string, string> = { "fixed-price": "Fixed price", "time-and-materials": "T&M", retainer: "Retainer" };
 
 /* ── per-skill renderers ───────────────────────────────────────────────── */
 
