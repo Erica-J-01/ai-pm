@@ -29,7 +29,7 @@ These are wired features that fail silently on the deployed site, which is the m
 
 ## P2 - Scalability and performance
 
-- [x] **No code-splitting - one 1.43 MB entry chunk** (428 kB gzip), three times Vite's warning. The pattern is already proven since pdfjs is split. Add `React.lazy` and `manualChunks`. Sub-wins, biggest first: - DONE: entry chunk now 267 kB (80 kB gzip), an ~81% reduction, no size warning.
+- [x] **No code-splitting - one 1.43 MB entry chunk** (428 kB gzip), three times Vite's warning. The pattern is already proven since pdfjs is split. Add `React.lazy` and `manualChunks`. Sub-wins, biggest first: - DONE: entry chunk now ~315 kB (97 kB gzip), well under the size warning. A later hardening pass removed @tanstack/react-query from the critical path and lazy-loaded all artifact views.
   - [x] recharts and its d3/lodash tail (396 kB, about 28 percent of the entry) is statically imported for just three chart views. Lazy-load them. Single largest win. `src/components/artifacts/RiskScanView.tsx:5` (small) - DONE: RiskScan/SprintReport/BudgetTracker views are `React.lazy`, recharts now a deferred 372 kB chunk.
   - [x] `skillPrompts.ts` (177 kB, only used in live mode, dead on Pages) - dynamic import. `src/api/skillPrompts.ts` (small) - DONE: loaded via `await import` inside the live-call path only.
   - [x] react-markdown stack (about 150 kB) - lazy-load. `src/components/artifacts/MarkdownArtifact.tsx` (small) - DONE: `MarkdownArtifact` is `React.lazy` behind a Suspense boundary.

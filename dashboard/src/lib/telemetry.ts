@@ -30,13 +30,21 @@ interface TelemetryRecord {
   userAgent: string;
 }
 
-// Redact anything that looks like an Anthropic key so a stack or message can
-// never carry a secret into the console or a remote sink.
-const SECRET_RE = /sk-ant-[A-Za-z0-9_-]+/g;
+// Redact secret-looking substrings so a stack or message can never carry a
+// secret into the console or a remote sink: Anthropic keys, and the token part
+// of a Bearer/Basic Authorization value (Confluence PAT or email:token).
+const SECRET_PATTERNS: [RegExp, string][] = [
+  [/sk-ant-[A-Za-z0-9_-]+/g, "sk-ant-[redacted]"],
+  // Only redact a credential-like token (>=16 chars of the auth charset) after
+  // Bearer/Basic, so real Authorization values are caught but prose like
+  // "Basic understanding" is not.
+  [/\b(Bearer|Basic)\s+[A-Za-z0-9._:~+/=-]{16,}/gi, "$1 [redacted]"],
+];
 
 /** Redact secret-looking substrings. Exported for testing. */
 export function scrubSecrets(s: string | undefined): string | undefined {
-  return s?.replace(SECRET_RE, "sk-ant-[redacted]");
+  if (s === undefined) return undefined;
+  return SECRET_PATTERNS.reduce((acc, [re, rep]) => acc.replace(re, rep), s);
 }
 
 function scrubContext(ctx?: Record<string, unknown>): Record<string, unknown> | undefined {

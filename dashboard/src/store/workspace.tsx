@@ -174,7 +174,9 @@ interface WorkspaceValue {
 const WorkspaceContext = createContext<WorkspaceValue | null>(null);
 
 let idSeq = 1;
-const slugify = (s: string) => s.trim().replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+// Strip disallowed chars, then trim leading/trailing "-" AND "." so a name can
+// never slug to a bare "." / ".." (path-traversal tokens) or an empty string.
+const slugify = (s: string) => s.trim().replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "") || "item";
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<ClientContext[]>(DEMO_CLIENTS);

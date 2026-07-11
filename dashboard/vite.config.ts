@@ -3,10 +3,36 @@ import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 import { ALLOWED_PROXY_METHODS, isBlockedTarget } from "./src/lib/proxyGuard";
 
+/** Dev-proxy request-body cap so an oversized upload can't OOM the dev server. */
+const MAX_PROXY_BODY = 5 * 1024 * 1024; // 5 MB
+
+/** Read a request body up to MAX_PROXY_BODY; tooLarge=true if the cap is exceeded. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function readCappedBody(req: any): Promise<{ body?: string; tooLarge: boolean }> {
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (r: { body?: string; tooLarge: boolean }) => { if (!done) { done = true; resolve(r); } };
+    const collected = () => ({ body: chunks.length > 0 ? Buffer.concat(chunks).toString("utf8") : undefined, tooLarge: false });
+    req.on("data", (chunk: Uint8Array) => {
+      if (done) return;
+      size += chunk.length;
+      // Stop buffering once over the cap (bounds memory); the caller sends 413
+      // and then destroys the request, so we do NOT destroy here (that would
+      // tear down the socket before the 413 response is flushed).
+      if (size > MAX_PROXY_BODY) { finish({ tooLarge: true }); return; }
+      chunks.push(chunk);
+    });
+    req.on("end", () => finish(collected()));
+    req.on("close", () => finish(collected()));
+  });
+}
+
 /**
  * Proxies POST /api/claude/v1/messages -> https://api.anthropic.com/v1/messages.
  * The API key is read from the x-claude-api-key request header (set by the
- * browser from localStorage) and forwarded as x-api-key. The target is always
+ * browser from sessionStorage) and forwarded as x-api-key. The target is always
  * the Anthropic API - no SSRF surface.
  */
 function claudeProxyPlugin() {
@@ -35,12 +61,14 @@ function claudeProxyPlugin() {
           // Strip /api/claude prefix to get the Anthropic path (e.g. /v1/messages)
           const subpath = (req.url as string) || "/v1/messages";
 
-          const chunks: Uint8Array[] = [];
-          await new Promise<void>((resolve) => {
-            req.on("data", (chunk: Uint8Array) => chunks.push(chunk));
-            req.on("end", resolve);
-          });
-          const body = chunks.length > 0 ? Buffer.concat(chunks).toString("utf8") : undefined;
+          const { body, tooLarge } = await readCappedBody(req);
+          if (tooLarge) {
+            res.statusCode = 413;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: "Request body too large" }));
+            req.destroy(); // stop the rest of the upload after the 413 is flushed
+            return;
+          }
 
           try {
             const upstream = await fetch(`https://api.anthropic.com${subpath}`, {
@@ -105,13 +133,15 @@ function confluenceProxyPlugin() {
             return;
           }
 
-          // Read request body (present for POST/PUT)
-          const chunks: Uint8Array[] = [];
-          await new Promise<void>((resolve) => {
-            req.on("data", (chunk: Uint8Array) => chunks.push(chunk));
-            req.on("end", resolve);
-          });
-          const rawBody = chunks.length > 0 ? Buffer.concat(chunks).toString("utf8") : undefined;
+          // Read request body (present for POST/PUT), capped.
+          const { body: rawBody, tooLarge } = await readCappedBody(req);
+          if (tooLarge) {
+            res.statusCode = 413;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: "Request body too large" }));
+            req.destroy(); // stop the rest of the upload after the 413 is flushed
+            return;
+          }
 
           try {
             const upstream = await fetch(targetUrl, {
@@ -187,7 +217,6 @@ export default defineConfig({
           if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/") || id.includes("node_modules/scheduler")) return "react-vendor";
           if (id.includes("node_modules/framer-motion") || id.includes("node_modules/motion")) return "motion-vendor";
           if (id.includes("node_modules/@radix-ui")) return "radix-vendor";
-          if (id.includes("node_modules/@tanstack")) return "query-vendor";
         },
       },
     },

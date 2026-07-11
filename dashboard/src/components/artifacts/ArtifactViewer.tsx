@@ -14,21 +14,21 @@ import { ConfluencePublishDialog } from "./ConfluencePublishDialog";
 import { generatePublishMarkdown } from "@/lib/generatePublishMarkdown";
 import { openPrintable } from "@/lib/printPdf";
 import { reportError } from "@/lib/telemetry";
-import { ReleaseChecklistView } from "./ReleaseChecklistView";
-import { DecisionLogView } from "./DecisionLogView";
-import { SprintPlanView } from "./SprintPlanView";
-import { RoadmapView } from "./RoadmapView";
-import { StoriesView } from "./StoriesView";
-import { DocumentView } from "./DocumentView";
 import { ActionBar } from "./ActionBar";
 
-// Lazy-load the chart-heavy views (recharts) and the markdown renderer
-// (react-markdown) so those large libraries leave the entry chunk and load
-// only when such an artefact is actually opened.
+// Lazy-load every artifact view so their code (recharts, react-markdown, and the
+// per-skill view logic) leaves the entry chunk and loads only when an artefact of
+// that type is actually opened. All render inside the Suspense boundary below.
 const RiskScanView = lazy(() => import("./RiskScanView").then((m) => ({ default: m.RiskScanView })));
 const SprintReportView = lazy(() => import("./SprintReportView").then((m) => ({ default: m.SprintReportView })));
 const BudgetTrackerView = lazy(() => import("./BudgetTrackerView").then((m) => ({ default: m.BudgetTrackerView })));
 const MarkdownArtifact = lazy(() => import("./MarkdownArtifact").then((m) => ({ default: m.MarkdownArtifact })));
+const ReleaseChecklistView = lazy(() => import("./ReleaseChecklistView").then((m) => ({ default: m.ReleaseChecklistView })));
+const DecisionLogView = lazy(() => import("./DecisionLogView").then((m) => ({ default: m.DecisionLogView })));
+const SprintPlanView = lazy(() => import("./SprintPlanView").then((m) => ({ default: m.SprintPlanView })));
+const RoadmapView = lazy(() => import("./RoadmapView").then((m) => ({ default: m.RoadmapView })));
+const StoriesView = lazy(() => import("./StoriesView").then((m) => ({ default: m.StoriesView })));
+const DocumentView = lazy(() => import("./DocumentView").then((m) => ({ default: m.DocumentView })));
 
 /** Skills with a structured schema can be edited via the form (not raw markdown). */
 const EDITABLE = new Set(STEPS.map((s) => s.id));

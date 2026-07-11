@@ -17,6 +17,18 @@ describe("scrubSecrets (telemetry secret redaction)", () => {
     expect(scrubSecrets("nothing secret here")).toBe("nothing secret here");
   });
 
+  it("redacts a Bearer/Basic Authorization value", () => {
+    expect(scrubSecrets("Authorization: Bearer abcdef0123456789TOKEN"))
+      .toBe("Authorization: Bearer [redacted]");
+    expect(scrubSecrets("Basic ZW1haWw6dG9rZW4tdmFsdWUtaGVyZQ=="))
+      .toBe("Basic [redacted]");
+  });
+
+  it("does not redact the words Basic/Bearer in ordinary prose", () => {
+    expect(scrubSecrets("Basic understanding of the API")).toBe("Basic understanding of the API");
+    expect(scrubSecrets("Bearer of bad news")).toBe("Bearer of bad news");
+  });
+
   it("passes undefined through", () => {
     expect(scrubSecrets(undefined)).toBeUndefined();
   });

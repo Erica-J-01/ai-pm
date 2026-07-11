@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { Paperclip, X } from "lucide-react";
 import {
@@ -88,6 +87,13 @@ function planReducer(state: PlanState, action: PlanAction): PlanState {
   }
 }
 
+/* ─── file ingestion limits ──────────────────────────────────────────── */
+
+const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB per file, enforced before reading
+const MAX_PDF_PAGES = 50;                 // cap extraction so a page-bomb PDF can't hang the tab
+const MAX_ATTACHMENTS = 10;
+const ACCEPTED_FILE = /\.(pdf|txt|md)$/i;
+
 /* ─── PDF extraction ─────────────────────────────────────────────────── */
 
 async function extractPdfText(file: File): Promise<string> {
@@ -102,12 +108,16 @@ async function extractPdfText(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await getDocument({ data: arrayBuffer }).promise;
   const pages: string[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
+  const pageCount = Math.min(pdf.numPages, MAX_PDF_PAGES);
+  for (let i = 1; i <= pageCount; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
     pages.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
   }
-  return pages.join("\n\n");
+  const text = pages.join("\n\n");
+  return pdf.numPages > MAX_PDF_PAGES
+    ? `${text}\n\n[Truncated to the first ${MAX_PDF_PAGES} of ${pdf.numPages} pages.]`
+    : text;
 }
 
 /* ─── component ──────────────────────────────────────────────────────── */
@@ -211,12 +221,23 @@ export function OrchestratorConsole({
 
   /* ── handle files (drag-drop or file input) ── */
   const handleFiles = useCallback(async (files: File[]) => {
-    const pdfs = files.filter((f) => f.type === "application/pdf");
-    const others = files.filter((f) => f.type !== "application/pdf");
-    setAttachments((prev) => [...prev, ...others]);
     setExtractError(null);
+    // Re-check type and size here (the file-picker `accept` does not constrain
+    // drag-drop), and cap the count, so an unsupported or oversized file cannot
+    // be read into memory.
+    const rejected: string[] = [];
+    const accepted = files.filter((f) => {
+      if (!(f.type === "application/pdf" || ACCEPTED_FILE.test(f.name))) { rejected.push(`${f.name} (unsupported - use PDF, TXT, or MD)`); return false; }
+      if (f.size > MAX_FILE_BYTES) { rejected.push(`${f.name} (over 25 MB)`); return false; }
+      return true;
+    });
+    if (rejected.length) setExtractError(`Skipped ${rejected.join("; ")}.`);
 
-    for (const pdf of pdfs) {
+    const isPdf = (f: File) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+    const others = accepted.filter((f) => !isPdf(f));
+    setAttachments((prev) => [...prev, ...others].slice(0, MAX_ATTACHMENTS));
+
+    for (const pdf of accepted.filter(isPdf)) {
       setExtracting(true);
       try {
         const text = await extractPdfText(pdf);
@@ -225,7 +246,7 @@ export function OrchestratorConsole({
           const trimmed = prev.trim();
           return trimmed ? `${trimmed}\n\n---\n\n${text}` : text;
         });
-        setAttachments((prev) => [...prev, pdf]);
+        setAttachments((prev) => [...prev, pdf].slice(0, MAX_ATTACHMENTS));
       } catch (e) {
         // Surface the failure instead of adding a chip that looks like success:
         // orchestrating on silently-empty input is worse than a visible error.
@@ -250,9 +271,14 @@ export function OrchestratorConsole({
     }
   }, [handleFiles]);
 
-  /* ── plan mutation ── */
-  const planMutation = useMutation({
-    mutationFn: async () => {
+  /* ── plan request (one-shot async; no cache/retry needed, so no react-query) ── */
+  const [planning, setPlanning] = useState(false);
+  const [planError, setPlanError] = useState<Error | null>(null);
+
+  const runPlan = useCallback(async () => {
+    setPlanning(true);
+    setPlanError(null);
+    try {
       const req: SkillExecutionRequest = {
         skill: "pm",
         clientId: clientId!,
@@ -262,9 +288,7 @@ export function OrchestratorConsole({
           id: `att-${i}`, name: f.name, mimeType: f.type, sizeBytes: f.size,
         })),
       };
-      return api.planOrchestration(req);
-    },
-    onSuccess: (p) => {
+      const p = await api.planOrchestration(req);
       dispatch({
         type: "set-plan",
         plan: { ...p, steps: p.steps.map((s) => ({ ...s, state: "approved" as PlanStepState })) },
@@ -278,8 +302,14 @@ export function OrchestratorConsole({
       setHighlightMissing([]);
       execAccRef.current = {};
       onRunInput?.(input.trim()); // persist the brief for later regeneration
-    },
-  });
+    } catch (e) {
+      setPlanError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setPlanning(false);
+    }
+    // `api` is re-resolved by the parent each render so a newly-added Claude key
+    // switches mock -> live; it MUST be a dep or runPlan freezes the old client.
+  }, [api, clientId, projectId, input, attachments, onRunInput]);
 
   const setDecision = useCallback((step: PlanStep, state: PlanStepState) => {
     dispatch({ type: "set-step", stepId: step.id, state });
@@ -486,7 +516,7 @@ export function OrchestratorConsole({
 
   const reset = () => {
     dispatch({ type: "reset" });
-    planMutation.reset();
+    setPlanError(null);
     setInput("");
     setAttachments([]);
     setCompleted(false);
@@ -618,17 +648,17 @@ export function OrchestratorConsole({
           </div>
           <div className="flex gap-2">
             {plan && !completed && <Button variant="ghost" size="sm" onClick={reset}>Reset</Button>}
-            <Button size="sm" disabled={!canRun || planMutation.isPending || extracting} onClick={() => planMutation.mutate()}>
-              {planMutation.isPending ? "Planning…" : "Plan steps"}
+            <Button size="sm" disabled={!canRun || planning || extracting} onClick={() => void runPlan()}>
+              {planning ? "Planning…" : "Plan steps"}
             </Button>
           </div>
         </div>
       </div>
 
       {/* ── States ── */}
-      {planMutation.isPending && <PlanSkeleton />}
-      {planMutation.isError && (
-        <ErrorCard message={(planMutation.error as Error).message} onRetry={() => planMutation.mutate()} />
+      {planning && <PlanSkeleton />}
+      {planError && (
+        <ErrorCard message={planError.message} onRetry={() => void runPlan()} />
       )}
 
       {/* ── Intake interview (replaces the plan while open) ── */}

@@ -50,6 +50,15 @@ These are hard rules. Every per-skill storage design and any backend code must o
 
 ---
 
+## Security hardening backlog (from the 2026-07-11 audit)
+
+Gaps the audit found in the plan below. Fold each into the referenced area when it is built.
+- **Email-ownership verification on email/password signup** (Area 1). Magic-link and OIDC imply a verified email, but classic password signup must send a verification link and block login until it is confirmed.
+- **Password-reset token: short TTL, single-use, hashed at rest** (Area 1). This is currently spelled out only for invite tokens (`:64`). Apply the same rules to reset tokens.
+- **MFA and account lockout** (Area 1). The plan has flat rate-limiting only. Add TOTP or WebAuthn, progressive backoff or lockout after repeated failures, and a global session-revocation path (log out all of a user's sessions).
+- **Bounded ingestion on any server ingest endpoint** (Area 4). Enforce a max request-body size, a per-file byte cap, a MIME allowlist, and a PDF page cap, mirroring the client-side guards now in `OrchestratorConsole.tsx`.
+- **One shared, tested JQL builder** (Area 5). JQL validation is described per skill. Centralise it in a single parameterised builder so escaping and rejection rules cannot drift between skills.
+
 ## 1. Identity, authentication and authorization
 
 Accounts, sessions, org tenancy, RBAC, and the central guard every read and write passes through.
