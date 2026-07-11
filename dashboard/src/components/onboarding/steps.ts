@@ -547,6 +547,7 @@ export const STEPS: OnbStep[] = [
       { name: "note", label: "Why now / depends on / open question", kind: "text" },
     ]},
     { name: "weeks", label: "Timeline weeks (optional)", kind: "text", placeholder: "number of weeks, e.g. 16" },
+    { name: "anchorDate", label: "Timeline start date (week 1, optional)", kind: "text", placeholder: "e.g. 2026-06-09 - links weeks and dates both ways" },
     { name: "tasks", label: "Timeline items (optional)", kind: "list", addLabel: "Add item", itemFields: [
       { name: "name", label: "Item", kind: "text" },
       { name: "lane", label: "Bucket / lane", kind: "text", placeholder: "e.g. Now" },

@@ -46,6 +46,44 @@ describe("buildRoadmap buckets and sections", () => {
   });
 });
 
+describe("roadmap timeline week/date sync via the anchor date", () => {
+  it("derives week numbers from dates when an anchor is set", () => {
+    const p = build({
+      goal: "G", weeks: "8", anchorDate: "2026-06-01",
+      tasks: [{ name: "A", lane: "Now", startDate: "2026-06-08", endDate: "2026-06-22" }],
+    });
+    // 7 days after anchor = week 2; 21 days after = week 4
+    expect(p.tasks[0]).toMatchObject({ startWeek: 2, endWeek: 4, startDate: "2026-06-08", endDate: "2026-06-22" });
+  });
+
+  it("fills missing dates from week numbers when an anchor is set", () => {
+    const p = build({
+      goal: "G", weeks: "8", anchorDate: "2026-06-01",
+      tasks: [{ name: "A", lane: "Now", startWeek: "2", endWeek: "3" }],
+    });
+    // week 2 start = anchor + 7 days; week 3 end = anchor + 3*7-1 = anchor + 20 days
+    expect(p.tasks[0]).toMatchObject({ startWeek: 2, endWeek: 3, startDate: "2026-06-08", endDate: "2026-06-21" });
+  });
+
+  it("runs an item with no end to the end of the timeline", () => {
+    const p = build({
+      goal: "G", weeks: "8", anchorDate: "2026-06-01",
+      tasks: [{ name: "A", lane: "Now", startWeek: "1" }],
+    });
+    expect(p.tasks[0].endWeek).toBe(8);
+    expect(p.tasks[0].endDate).toBe("2026-07-26"); // anchor + 8*7-1 = anchor + 55 days
+  });
+
+  it("leaves weeks and dates independent when no anchor is given", () => {
+    const p = build({
+      goal: "G", weeks: "8",
+      tasks: [{ name: "A", lane: "Now", startWeek: "2", endWeek: "3", startDate: "2026-06-08", endDate: "2026-06-22" }],
+    });
+    // no anchor: the typed weeks are used as-is, dates kept as-is, no derivation
+    expect(p.tasks[0]).toMatchObject({ startWeek: 2, endWeek: 3, startDate: "2026-06-08", endDate: "2026-06-22" });
+  });
+});
+
 describe("roadmap seeded sample", () => {
   it("is a Now/Next/Later roadmap with hard commitments, a changes-since, and optional sizes", () => {
     const sp = SAMPLE_ARTIFACTS["roadmap"]!.payload as RoadmapPayload;
