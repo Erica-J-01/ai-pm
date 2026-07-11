@@ -391,6 +391,57 @@ Compares spend to date against the charter budget, forecasts cost at completion,
 
 ---
 
+## The Dashboard (web app)
+
+Alongside the command-line skills, the project ships a companion web dashboard that turns the same PM workflows into a point-and-click workspace. It runs entirely in the browser with built-in sample data, so you can explore it with nothing connected.
+
+### Running it
+
+From the `dashboard/` folder:
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Then open the local URL it prints (http://localhost:5173).
+
+### The layout
+
+Three columns:
+
+- **Left** - pick a client, then a project. The skill navigation and artifacts appear once a project is selected.
+- **Center** - the Execution Console, where you paste input and run the orchestrator, or the structured editor when you edit an artifact.
+- **Right** - the artifact canvas, which shows the selected artifact as a polished, publish-ready view.
+
+### Running the orchestrator
+
+Paste a stakeholder message, meeting transcript, PRD, or requirements into the console (or attach a file), then choose **Plan steps**. The orchestrator reads the input, proposes a sequence of skills, and asks you to approve or skip each step. Approved steps generate their artifact and appear in the left navigation.
+
+### Editing an artifact
+
+Any structured artifact has an **Edit** button that opens a form in the center column. The canvas updates live as you type, and **Save** keeps your changes. The onboarding brief is a special case: most of it auto-fills from the project's other artefacts, and only the human-input fields are yours to complete.
+
+### Exporting and publishing
+
+Every artifact has an action bar with:
+
+- **Copy markdown** to the clipboard
+- **Save locally** as a markdown file
+- **Download PDF** for a clean printable copy, handy for emailing a brief
+- **Publish to Confluence** when the Confluence connector is set up
+
+### Live mode (optional)
+
+By default the dashboard uses built-in sample data, so it works with nothing connected. To generate artifacts from your own input with live Claude, open **Manage** in the connectors panel and add your Anthropic API key. Without a key it stays in sample mode.
+
+### How it relates to the skills
+
+The dashboard runs the same skills documented above. The command line inside Claude Code and the dashboard are two front ends over the same PM workflows: use whichever fits the moment.
+
+---
+
 ## Project Structure
 
 ```
