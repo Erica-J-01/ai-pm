@@ -1,0 +1,62 @@
+name: Deploy dashboard to GitHub Pages
+
+# Builds the React dashboard (dashboard/) and publishes it to GitHub Pages.
+# The mock data is seeded in the app, so the static build is a fully working demo.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dashboard/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+# Opt the JavaScript actions into the Node 24 runtime (Node 20 is deprecated).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+      # Gate the deploy on the same checks as local `npm run build`: type errors
+      # and failing tests must never reach the public site.
+      - run: npx tsc -b
+      - run: npx vitest run
+      # Build with Vite/esbuild; base must match the project-pages sub-path.
+      - run: npx vite build --base=/ai-pm-erica/
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

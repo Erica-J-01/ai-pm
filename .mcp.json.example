@@ -1,0 +1,43 @@
+{
+  "_comment": "TEMPLATE — copy this file to .mcp.json and fill in real values, OR enable the equivalent Claude connectors (see README → Connecting Your Tools). .mcp.json is gitignored so your credentials never get committed. Secrets should be referenced via ${ENV_VAR} and kept in your shell env or a gitignored .env — never hardcoded here.",
+
+  "mcpServers": {
+    "atlassian": {
+      "_comment": "Jira + Confluence. Skills expect connector-style tool names; if you self-host, confirm the exposed tool names match the skills' allowed-tools or update those.",
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/sse"],
+      "env": {
+        "ATLASSIAN_SITE_URL": "${ATLASSIAN_SITE_URL}",
+        "ATLASSIAN_EMAIL": "${ATLASSIAN_EMAIL}",
+        "ATLASSIAN_API_TOKEN": "${ATLASSIAN_API_TOKEN}"
+      }
+    },
+
+    "google-drive": {
+      "_comment": "Google Drive document creation. Provide a service-account or OAuth credentials path.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gdrive"],
+      "env": {
+        "GDRIVE_CREDENTIALS_PATH": "${GDRIVE_CREDENTIALS_PATH}"
+      }
+    },
+
+    "notion": {
+      "_comment": "Notion page creation. Token from https://www.notion.so/my-integrations",
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_API_KEY": "${NOTION_API_KEY}"
+      }
+    },
+
+    "gmail": {
+      "_comment": "Gmail draft creation. Provide OAuth credentials path.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gmail"],
+      "env": {
+        "GMAIL_CREDENTIALS_PATH": "${GMAIL_CREDENTIALS_PATH}"
+      }
+    }
+  }
+}

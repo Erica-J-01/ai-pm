@@ -1,0 +1,46 @@
+# Client data — never commit real client files
+# Belt-and-braces: match common client-folder names regardless of casing/variants
+clients/
+client/
+client-data/
+Clients/
+*.client.md
+*_client.md
+*-client-*.md
+
+# Generated artefacts — output only, not source
+.claude/skills/Artifacts/
+
+# Root-level client documents — use generic patterns, never hardcode client names
+*_Project_Charter.md
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code local settings — personal overrides, never shared
+.claude/settings.local.json
+.claude/launch.json
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# MCP connection config — may contain tokens; commit .mcp.json.example instead
+.mcp.json
+
+# Logs
+*.log
+
+# Local reference material — books, PDFs, personal notes
+Books/
+*.pdf

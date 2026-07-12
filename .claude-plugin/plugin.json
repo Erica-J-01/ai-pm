@@ -1,0 +1,9 @@
+{
+  "name": "ai-pm-assistant",
+  "description": "Senior PM co-pilot - converts raw inputs into decision-ready PM artefacts across the full delivery lifecycle",
+  "version": "2.0.0",
+  "author": {
+    "name": "Erica",
+    "email": "joshierica44@gmail.com"
+  }
+}
